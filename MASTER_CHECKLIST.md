@@ -14,7 +14,7 @@
 - [ ] Proposal disetujui dosen pembimbing secara resmi
 - [ ] Lembar pengesahan sudah ditandatangani semua pihak
 - [ ] Proposal versi final tersimpan rapi (PDF + DOCX)
-- [ ] CLAUDE.md sudah dibuat dan diperbarui sesuai perkembangan project
+- [x] CLAUDE.md sudah dibuat dan diperbarui sesuai perkembangan project
 
 ### Revisi Proposal (dari dosen)
 #### Konten & Substansi
@@ -42,19 +42,19 @@
 ### Lingkungan & Tools
 - [x] Install OBS Studio versi 28+
 - [x] Aktifkan OBS-WebSocket di OBS Studio (Tools → WebSocket Server Settings)
-- [ ] Test koneksi OBS-WebSocket secara manual (via browser WebSocket tool)
-- [ ] Aktifkan & konfigurasi Replay Buffer di OBS — test simpan manual
-- [ ] Install FFmpeg & daftarkan ke system environment variables
+- [x] Test koneksi OBS-WebSocket secara manual (via browser WebSocket tool)
+- [x] Aktifkan & konfigurasi Replay Buffer di OBS — test simpan manual
+- [x] Install FFmpeg & daftarkan ke system environment variables
 - [ ] Test FFmpeg stream copy manual: `ffmpeg -ss [offset] -i input.mp4 -c copy output.mp4`
 - [x] Install Python 3.10+ 
 - [x] Install Node.js 18+ dan npm
 - [x] Install Git & buat repository project (GitHub/GitLab)
 - [x] Setup Python virtual environment: `python -m venv venv`
 - [x] Install dependency awal backend: `fastapi uvicorn obsws-python aiosqlite sqlalchemy`
-- [ ] Install dependency awal frontend: `npm create vite@latest` (React + JS)
-- [ ] Setup struktur folder project sesuai CLAUDE.md
-- [ ] Buat file `.env` untuk menyimpan konfigurasi sensitif (host, port, password OBS)
-- [ ] Buat file `.gitignore` (exclude `venv/`, `.env`, `node_modules/`, file video)
+- [x] Install dependency awal frontend: `npm create vite@latest` (React + JS)
+- [x] Setup struktur folder project sesuai CLAUDE.md
+- [x] Buat file `.env` untuk menyimpan konfigurasi sensitif (host, port, password OBS)
+- [x] Buat file `.gitignore` (exclude `venv/`, `.env`, `node_modules/`, file video)
 
 ### Koordinasi Mitra (CV. Alzen Metro Data)
 - [ ] Konfirmasi format video output yang dipakai (MP4/MKV, codec, resolusi)
@@ -82,28 +82,28 @@
 ## 💻 FASE 2 — Coding (per Iterasi)
 
 ### Iterasi 1 — Integrasi & Konektivitas Sistem
-- [ ] Buat koneksi OBS-WebSocket dari Python menggunakan `obsws-python`
+- [x] Buat koneksi OBS-WebSocket dari Python menggunakan `obsws-python`
 - [ ] Implementasi auto-reconnect jika koneksi terputus
 - [ ] Subscribe ke event audio dari OBS
 - [ ] Terima & print data audio mentah dari OBS ke terminal
-- [ ] Buat endpoint FastAPI: `GET /status` — status koneksi OBS
-- [ ] Buat endpoint FastAPI: `POST /connect` — inisiasi koneksi ke OBS
-- [ ] Buat endpoint FastAPI: `POST /disconnect` — putus koneksi
-- [ ] Buat WebSocket endpoint FastAPI untuk push status ke frontend
+- [x] Buat endpoint FastAPI: `GET /status` — status koneksi OBS
+- [x] Buat endpoint FastAPI: `POST /connect` — inisiasi koneksi ke OBS
+- [x] Buat endpoint FastAPI: `POST /disconnect` — putus koneksi
+- [x] Buat WebSocket endpoint FastAPI untuk push status ke frontend
 - [ ] Buat komponen React: `ConnectionPanel` — form input IP, port, password
 - [ ] Buat komponen React: status indikator koneksi (Connected / Disconnected)
 - [ ] Test end-to-end: frontend → backend → OBS terhubung
 - [ ] **Review & evaluasi Iterasi 1 sebelum lanjut**
 
 ### Iterasi 2 — Analisis Audio & Logika Trigger
-- [ ] Implementasi konversi magnitude → dBFS: `20 * log10(magnitude)`
-- [ ] Implementasi pembacaan RMS real-time dari stream OBS-WebSocket
-- [ ] Implementasi Time-Persistence Thresholding:
-  - [ ] Catat `T_Start` saat dBFS pertama melampaui threshold
-  - [ ] Reset timer jika dBFS turun sebelum durasi minimum
-  - [ ] Trigger valid jika dBFS bertahan ≥ `persistence_duration` detik
+- [x] Implementasi konversi magnitude → dBFS: `20 * log10(magnitude)`
+- [x] Implementasi pembacaan RMS real-time dari stream audio (via sounddevice)
+- [x] Implementasi Time-Persistence Thresholding:
+- [x] Catat `T_Start` saat dBFS pertama melampaui threshold
+- [x] Reset timer jika dBFS turun sebelum durasi minimum
+- [x] Trigger valid jika dBFS bertahan ≥ `persistence_duration` detik
 - [ ] Implementasi pengiriman perintah `SaveReplayBuffer` ke OBS via WebSocket
-- [ ] Implementasi mekanisme cooldown setelah trigger (hindari trigger beruntun)
+- [x] Implementasi mekanisme cooldown setelah trigger (hindari trigger beruntun)
 - [ ] Push data dBFS real-time ke frontend via WebSocket
 - [ ] Buat komponen React: `AudioChart` — grafik bar dBFS real-time
 - [ ] Tampilkan garis threshold horizontal pada grafik
@@ -259,12 +259,16 @@
 
 | Fase | Keterangan | Status |
 |------|-----------|--------|
-| Fase 0 | Administrasi & Dokumen | 🔴 Belum |
-| Fase 1 | Persiapan Sebelum Coding | 🔴 Belum |
-| Fase 2 | Coding (4 Iterasi) | 🔴 Belum |
+| Fase 0 | Administrasi & Dokumen | 🟡 Sedang berjalan |
+| Fase 1 | Persiapan Sebelum Coding | 🟡 Sedang berjalan |
+| Fase 2 | Coding (4 Iterasi) | 🟡 Sedang berjalan |
 | Fase 3 | Pengujian | 🔴 Belum |
 | Fase 4 | Penulisan Laporan | 🔴 Belum |
 | Fase 5 | Deployment & Sidang | 🔴 Belum |
 
 > Update tabel ini secara berkala:
 > 🔴 Belum dimulai | 🟡 Sedang berjalan | 🟢 Selesai
+
+---
+> Terakhir diperbarui: Mei 2026 — Sesi hari ini berhasil:
+> backend FastAPI jalan, koneksi OBS berhasil, audio monitor via sounddevice aktif, deteksi dBFS real-time berjalan ✅

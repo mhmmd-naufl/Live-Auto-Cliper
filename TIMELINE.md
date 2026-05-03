@@ -1,19 +1,21 @@
 # TIMELINE & TARGET — Tugas Akhir
+
 ## Sistem Pemotongan Highlight Siaran Langsung
+
 **Muhammad Naufal Aulia — NIM. 362258302068**
 
 ---
 
 ## ⚠️ Situasi Saat Ini
 
-| Item | Status |
-|------|--------|
-| Bulan sekarang | Mei 2026 |
+| Item                   | Status           |
+| ---------------------- | ---------------- |
+| Bulan sekarang         | Mei 2026         |
 | Estimasi sidang/semhas | Juni – Juli 2026 |
-| Waktu tersisa | ± 7–8 minggu |
-| Progress coding | Belum ada |
-| Progress laporan TA | Belum ada |
-| Hari aktif per minggu | 5–6 hari |
+| Waktu tersisa          | ± 7–8 minggu     |
+| Progress coding        | Belum ada        |
+| Progress laporan TA    | Belum ada        |
+| Hari aktif per minggu  | 5–6 hari         |
 
 > **Kesimpulan:** Waktu sangat mepet. Tidak ada ruang untuk jeda panjang.
 > Setiap minggu HARUS ada output nyata yang bisa ditunjukkan.
@@ -32,23 +34,24 @@
 ## 📅 Jadwal 8 Minggu
 
 ### Minggu 1 — Mei Minggu ke-2
+
 **Tema: Administrasi + Persiapan Environment** 🔴 KRITIS
 
 **Target output:** Semua tools terinstall dan terhubung, struktur folder project siap.
 
-- [ ] Install OBS Studio versi 28+
-- [ ] Aktifkan OBS-WebSocket di OBS (Tools → WebSocket Server Settings)
-- [ ] Test koneksi OBS-WebSocket secara manual (via browser atau Postman)
-- [ ] Aktifkan & test Replay Buffer OBS — coba simpan manual
-- [ ] Install FFmpeg & daftarkan ke environment variables sistem
+- [x] Install OBS Studio versi 28+
+- [x] Aktifkan OBS-WebSocket di OBS (Tools → WebSocket Server Settings)
+- [x] Test koneksi OBS-WebSocket secara manual (via browser atau Postman)
+- [x] Aktifkan & test Replay Buffer OBS — coba simpan manual
+- [x] Install FFmpeg & daftarkan ke environment variables sistem
 - [ ] Test FFmpeg stream copy manual di terminal: `ffmpeg -ss 5 -i input.mp4 -c copy output.mp4`
-- [ ] Install Python 3.10+, Node.js 18+, Git
-- [ ] Buat repository Git (GitHub/GitLab) untuk project
-- [ ] Setup Python virtual environment: `python -m venv venv`
-- [ ] Install dependency awal: `pip install fastapi uvicorn obsws-python aiosqlite sqlalchemy python-dotenv`
-- [ ] Init project React: `npm create vite@latest frontend -- --template react`
-- [ ] Buat struktur folder project sesuai CLAUDE.md
-- [ ] Buat file `.env` dan `.gitignore`
+- [x] Install Python 3.10+, Node.js 18+, Git
+- [x] Buat repository Git (GitHub/GitLab) untuk project
+- [x] Setup Python virtual environment: `python -m venv venv`
+- [x] Install dependency awal: `pip install fastapi uvicorn obsws-python aiosqlite sqlalchemy python-dotenv`
+- [x] Init project React: `npm create vite@latest frontend -- --template react`
+- [x] Buat struktur folder project sesuai CLAUDE.md
+- [x] Buat file `.env` dan `.gitignore`
 - [ ] Koordinasi mitra CV. Alzen Metro Data:
   - [ ] Konfirmasi format video (codec, resolusi, container)
   - [ ] Konfirmasi durasi Replay Buffer yang biasa dipakai
@@ -57,6 +60,7 @@
 ---
 
 ### Minggu 2 — Mei Minggu ke-3
+
 **Tema: Persiapan Data + Cicil Revisi Proposal** 🟡 PARALEL
 
 **Target output:** Data uji siap dianotasi, revisi teknis penulisan proposal selesai.
@@ -70,13 +74,14 @@
 - [ ] Coba library `obsws-python` — jalankan contoh sederhana
 - [ ] **Revisi proposal (teknis penulisan):**
   - [ ] Hapus semua kata "penulis" → ganti kalimat pasif
-  - [ ] Hapus kata ambigu: *tersebut, atas, bawah, sebelumnya, setelahnya*
-  - [ ] Pastikan semua kata asing ditulis *italic*
+  - [ ] Hapus kata ambigu: _tersebut, atas, bawah, sebelumnya, setelahnya_
+  - [ ] Pastikan semua kata asing ditulis _italic_
   - [ ] Rapikan format semua tabel di proposal
 
 ---
 
 ### Minggu 3 — Mei Minggu ke-4
+
 **Tema: Coding Iterasi 1 — Konektivitas Sistem** 🔴 KRITIS
 
 **Target output:** Frontend dan backend bisa terhubung ke OBS Studio secara live.
@@ -100,6 +105,7 @@
 ---
 
 ### Minggu 4 — Juni Minggu ke-1
+
 **Tema: Coding Iterasi 2 — Analisis Audio & Trigger** 🔴 KRITIS
 
 **Target output:** Sistem bisa mendeteksi lonjakan audio dan memicu SaveReplayBuffer ke OBS.
@@ -123,6 +129,7 @@
 ---
 
 ### Minggu 5 — Juni Minggu ke-2
+
 **Tema: Coding Iterasi 3 — Parameter & Output** 🔴 KRITIS
 
 **Target output:** File video highlight tersimpan presisi di folder tujuan, log tercatat di database.
@@ -133,9 +140,9 @@
   - [ ] `POST /config` — simpan konfigurasi
   - [ ] `GET /config` — ambil konfigurasi aktif
 - [ ] Implementasi algoritma perhitungan offset:
-  `Offset = Durasi_Replay_Buffer - (T_Save - T_Start)`
+      `Offset = Durasi_Replay_Buffer - (T_Save - T_Start)`
 - [ ] Implementasi FFmpeg stream copy via subprocess Python:
-  `ffmpeg -ss {offset} -i {input} -c copy {output}`
+      `ffmpeg -ss {offset} -i {input} -c copy {output}`
 - [ ] Implementasi pemindahan file dari folder temp OBS ke direktori tujuan
 - [ ] Implementasi pencatatan setiap kejadian ke tabel `highlight_logs`
 - [ ] Buat komponen React `ActionCenter` — form threshold, durasi, folder path
@@ -149,11 +156,13 @@
 ---
 
 ### Minggu 6 — Juni Minggu ke-3
+
 **Tema: Coding Iterasi 4 — Dashboard Final + Cicil Laporan** 🟡 PARALEL
 
 **Target output:** Dashboard final berjalan, Bab I dan II laporan TA selesai draft pertama.
 
 **Coding:**
+
 - [ ] Buat endpoint `GET /logs` — ambil semua highlight logs
 - [ ] Buat komponen React `HighlightsLog` — tabel riwayat aktivitas
 - [ ] Tampilkan: timestamp, filename, trigger value, status, durasi di log
@@ -165,17 +174,20 @@
 - [ ] ✅ **Evaluasi Iterasi 4 — sistem dinyatakan siap uji**
 
 **Laporan TA (cicil):**
+
 - [ ] Draft Bab I — Pendahuluan (latar belakang, rumusan masalah, tujuan, manfaat, batasan)
 - [ ] Draft Bab II — Tinjauan Pustaka (dasar teori + penelitian terkait)
 
 ---
 
 ### Minggu 7 — Juni Minggu ke-4
+
 **Tema: Pengujian Black Box + Confusion Matrix** 🔴 KRITIS
 
 **Target output:** Semua test case selesai, nilai Accuracy/Precision/Recall/F1-Score terdokumentasi.
 
 **Black Box Testing:**
+
 - [ ] TC-CON-01: Koneksi berhasil dengan kredensial benar
 - [ ] TC-CON-02: Koneksi gagal karena OBS tidak aktif
 - [ ] TC-CON-03: Koneksi gagal karena password salah
@@ -193,6 +205,7 @@
 - [ ] TC-CONF-03: Input nilai threshold tidak valid ditolak sistem
 
 **Confusion Matrix:**
+
 - [ ] Jalankan sistem pada semua video uji yang sudah dianotasi
 - [ ] Catat hasil: TP, FP, TN, FN per video
 - [ ] Hitung Accuracy: `(TP + TN) / (TP + TN + FP + FN)`
@@ -203,16 +216,19 @@
 - [ ] Dokumentasikan semua hasil pengujian dalam tabel
 
 **Laporan TA (cicil):**
+
 - [ ] Draft Bab III — Metode Penelitian (sesuaikan dengan implementasi aktual)
 
 ---
 
 ### Minggu 8 — Juli Minggu ke-1
+
 **Tema: Penulisan Laporan Final + Finalisasi + Persiapan Sidang** 🔴 KRITIS
 
 **Target output:** Laporan TA final siap submit, siap sidang.
 
 **Laporan TA:**
+
 - [ ] Draft Bab IV — Hasil & Pembahasan (screenshot, tabel pengujian, analisis)
 - [ ] Draft Bab V — Penutup (kesimpulan menjawab rumusan masalah, saran)
 - [ ] Lengkapi Daftar Pustaka — format konsisten
@@ -222,6 +238,7 @@
 - [ ] Laporan TA final ditandatangani semua pihak
 
 **Finalisasi Kode:**
+
 - [ ] Hapus semua `print()` debug yang tidak perlu
 - [ ] Tambahkan error handling di semua titik kritis
 - [ ] Pastikan tidak ada credential hardcoded (semua pakai `.env`)
@@ -229,6 +246,7 @@
 - [ ] Buat `README.md` berisi panduan instalasi dan penggunaan sistem
 
 **Persiapan Sidang:**
+
 - [ ] Buat slide presentasi sidang (ringkas, fokus demo)
 - [ ] Latihan demo sistem minimal 2 kali
 - [ ] Test deployment di komputer mitra (bukan komputer dev)
@@ -243,16 +261,16 @@
 
 ## 📊 Ringkasan Progress per Minggu
 
-| Minggu | Periode | Tema | Status |
-|--------|---------|------|--------|
-| 1 | Mei W2 | Administrasi + Persiapan Environment | 🔴 Belum |
-| 2 | Mei W3 | Persiapan Data + Cicil Revisi Proposal | 🔴 Belum |
-| 3 | Mei W4 | Coding Iterasi 1 — Konektivitas | 🔴 Belum |
-| 4 | Jun W1 | Coding Iterasi 2 — Audio & Trigger | 🔴 Belum |
-| 5 | Jun W2 | Coding Iterasi 3 — Parameter & Output | 🔴 Belum |
-| 6 | Jun W3 | Coding Iterasi 4 — Dashboard + Cicil Laporan | 🔴 Belum |
-| 7 | Jun W4 | Pengujian Black Box + Confusion Matrix | 🔴 Belum |
-| 8 | Jul W1 | Laporan Final + Finalisasi + Sidang | 🔴 Belum |
+| Minggu | Periode | Tema                                         | Status             |
+| ------ | ------- | -------------------------------------------- | ------------------ |
+| 1      | Mei W2  | Administrasi + Persiapan Environment         | 🟢 Selesai         |
+| 2      | Mei W3  | Persiapan Data + Cicil Revisi Proposal       | 🔴 Belum           |
+| 3      | Mei W4  | Coding Iterasi 1 — Konektivitas              | 🟡 Sedang berjalan |
+| 4      | Jun W1  | Coding Iterasi 2 — Audio & Trigger           | 🟡 Sedang berjalan |
+| 5      | Jun W2  | Coding Iterasi 3 — Parameter & Output        | 🔴 Belum           |
+| 6      | Jun W3  | Coding Iterasi 4 — Dashboard + Cicil Laporan | 🔴 Belum           |
+| 7      | Jun W4  | Pengujian Black Box + Confusion Matrix       | 🔴 Belum           |
+| 8      | Jul W1  | Laporan Final + Finalisasi + Sidang          | 🔴 Belum           |
 
 > Update kolom Status secara berkala:
 > 🔴 Belum dimulai &nbsp;|&nbsp; 🟡 Sedang berjalan &nbsp;|&nbsp; 🟢 Selesai
@@ -261,15 +279,15 @@
 
 ## 🚨 Risiko & Mitigasi
 
-| Risiko | Kemungkinan | Mitigasi |
-|--------|-------------|----------|
-| Video sampel dari mitra terlambat | Tinggi | Minta di minggu 1, jangan tunggu minggu 2 |
-| OBS-WebSocket sulit diintegrasikan | Sedang | Alokasikan 2 hari ekstra di minggu 3 |
-| Hasil Confusion Matrix buruk | Sedang | Kalibrasi threshold di minggu 2, jangan tunggu pengujian |
-| Revisi laporan dari dosen banyak | Tinggi | Submit draft awal ke pembimbing di minggu 6, bukan minggu 8 |
-| Bug kritis muncul saat demo | Sedang | Latihan demo minimal 2x sebelum sidang |
+| Risiko                             | Kemungkinan | Mitigasi                                                    |
+| ---------------------------------- | ----------- | ----------------------------------------------------------- |
+| Video sampel dari mitra terlambat  | Tinggi      | Minta di minggu 1, jangan tunggu minggu 2                   |
+| OBS-WebSocket sulit diintegrasikan | Sedang      | Alokasikan 2 hari ekstra di minggu 3                        |
+| Hasil Confusion Matrix buruk       | Sedang      | Kalibrasi threshold di minggu 2, jangan tunggu pengujian    |
+| Revisi laporan dari dosen banyak   | Tinggi      | Submit draft awal ke pembimbing di minggu 6, bukan minggu 8 |
+| Bug kritis muncul saat demo        | Sedang      | Latihan demo minimal 2x sebelum sidang                      |
 
 ---
 
-*File ini bagian dari project TA — update setiap ada progress.*
-*Terakhir diperbarui: Mei 2026*
+_File ini bagian dari project TA — update setiap ada progress._
+_Terakhir diperbarui: Mei 2026_
