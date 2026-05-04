@@ -237,7 +237,7 @@ Proposal masih dalam proses revisi. Berikut daftar poin revisi dari dosen yang p
 
 ---
 
-## Catatan Penting untuk Claude
+## Catatan Penting
 
 - Sistem ini **real-time sensitive** — latency antara deteksi dan trigger harus seminimal mungkin
 - FFmpeg **harus stream copy** (`-c copy`), bukan re-encode — ini constraint utama untuk performa

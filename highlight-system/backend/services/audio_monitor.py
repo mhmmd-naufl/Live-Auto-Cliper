@@ -3,19 +3,14 @@ import math
 import time
 import numpy as np
 import sounddevice as sd
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-AUDIO_DEVICE_ID = int(os.getenv("AUDIO_DEVICE_ID", "12"))
+from config import AUDIO_DEVICE_ID, THRESHOLD_DB, PERSISTENCE_DURATION
 
 class AudioMonitor:
     def __init__(self):
         self.connected = False
         self.current_dbfs = -60.0
-        self.threshold_db = float(os.getenv("THRESHOLD_DB", "-20.0"))
-        self.persistence_duration = float(os.getenv("PERSISTENCE_DURATION", "2.0"))
+        self.threshold_db = THRESHOLD_DB
+        self.persistence_duration = PERSISTENCE_DURATION
 
         self.t_start = None
         self.is_above_threshold = False
@@ -27,6 +22,9 @@ class AudioMonitor:
         self._stream = None
         self._loop = None
 
+        self._dbfs_buffer = []
+        self._buffer_size = 20
+
     def magnitude_to_dbfs(self, magnitude: float) -> float:
         if magnitude <= 0:
             return -60.0
@@ -37,6 +35,8 @@ class AudioMonitor:
 
         if now < self.cooldown_until:
             return
+
+        # print(f"current threshold : {dbfs:.1f} dBFS")
 
         if dbfs >= self.threshold_db:
             if not self.is_above_threshold:
@@ -63,18 +63,18 @@ class AudioMonitor:
         if status:
             print(f"⚠️ Audio status: {status}")
 
-        # Hitung RMS
         rms = np.sqrt(np.mean(indata ** 2))
         dbfs = self.magnitude_to_dbfs(float(rms))
-        self.current_dbfs = dbfs
-        self._check_threshold(dbfs)
 
-        # Broadcast ke listeners (frontend WebSocket)
-        if self._loop and self._listeners:
-            for listener in self._listeners:
-                asyncio.run_coroutine_threadsafe(listener(dbfs), self._loop)
+        self._dbfs_buffer.append(dbfs)
+        if len(self._dbfs_buffer) > self._buffer_size:
+            self._dbfs_buffer.pop(0)
 
-    def set_cooldown(self, seconds: float = 10.0):
+        avg_dbfs = sum(self._dbfs_buffer) / len(self._dbfs_buffer)
+        self.current_dbfs = avg_dbfs
+        self._check_threshold(avg_dbfs)
+
+    def set_cooldown(self, seconds: float = 5.0):        
         self.cooldown_until = time.time() + seconds
         print(f"⏳ Cooldown aktif selama {seconds} detik")
 
@@ -87,7 +87,6 @@ class AudioMonitor:
     async def start(self, device_id: int = AUDIO_DEVICE_ID):
         try:
             await self.stop()
-
             self._loop = asyncio.get_event_loop()
 
             device_info = sd.query_devices(device_id)

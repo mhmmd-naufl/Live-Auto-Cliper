@@ -1,19 +1,10 @@
-import asyncio
 import obsws_python as obs
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-OBS_HOST = os.getenv("OBS_HOST", "127.0.0.1")
-OBS_PORT = int(os.getenv("OBS_PORT", "4455"))
-OBS_PASSWORD = os.getenv("OBS_PASSWORD", "Test123")
+from config import OBS_HOST, OBS_PORT, OBS_PASSWORD
 
 class OBSClient:
     def __init__(self):
         self.client = None
         self.connected = False
-        self._reconnect_task = None
 
     async def connect(self, host: str = OBS_HOST, port: int = OBS_PORT, password: str = OBS_PASSWORD) -> dict:
         try:
@@ -68,5 +59,4 @@ class OBSClient:
         except Exception as e:
             return {"active": False, "error": str(e)}
 
-# Singleton instance
 obs_client = OBSClient()

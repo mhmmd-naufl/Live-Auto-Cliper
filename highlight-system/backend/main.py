@@ -1,9 +1,29 @@
 from fastapi import FastAPI
+import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import init_db
 from services.obs_client import obs_client
 from services.audio_monitor import audio_monitor
+from services.ffmpeg_runner import run_ffmpeg_cut
+
+async def on_trigger_handler(t_start: float):
+    import time
+    t_save = time.time()
+    
+    # Simpan replay buffer ke OBS
+    result = await obs_client.save_replay_buffer()
+    
+    if result["success"]:
+        print(f"🎬 Replay Buffer saved! T_Start={t_start:.2f}, T_Save={t_save:.2f}")
+    else:
+        print(f"❌ Failed to save replay buffer: {result['message']}")
+    
+    # Set cooldown 10 detik biar tidak trigger beruntun
+    audio_monitor.set_cooldown(10.0)
+
+# Daftarkan handler ke audio monitor
+audio_monitor.on_trigger = on_trigger_handler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,6 +74,7 @@ async def replay_buffer_status():
 
 @app.post("/obs/monitor/start")
 async def start_monitor():
+    audio_monitor.on_trigger = on_trigger_handler
     await audio_monitor.start()
     return {"success": True, "message": "Audio monitor started"}
 
@@ -78,3 +99,22 @@ async def debug_inputs():
         return {"inputs": inputs.inputs}
     except Exception as e:
         return {"error": str(e)}
+    
+async def on_trigger_handler(t_start: float):
+    import time
+    t_save = time.time()
+
+    # Simpan replay buffer ke OBS
+    result = await obs_client.save_replay_buffer()
+
+    if result["success"]:
+        print(f"🎬 Replay Buffer saved! T_Start={t_start:.2f}, T_Save={t_save:.2f}")
+        
+        # Jalankan FFmpeg di background biar tidak blocking
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, run_ffmpeg_cut, t_start, t_save)
+    else:
+        print(f"❌ Failed to save replay buffer: {result['message']}")
+
+    # Set cooldown 15 detik
+    audio_monitor.set_cooldown(15.0)
