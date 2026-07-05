@@ -219,21 +219,21 @@ Proposal masih dalam proses revisi. Berikut daftar poin revisi dari dosen yang p
 
 ### Konten & Substansi
 - [x] Perjelas permasalahan yang dialami mitra (CV. Alzen Metro Data) — lebih spesifik dan terstruktur
-- [ ] Cek abstrak — eliminasi kalimat yang terindikasi bersumber dari AI
+- [x] Cek abstrak — eliminasi kalimat yang terindikasi bersumber dari AI
 - [x] Perjelas tujuan TA — lebih konkret dan terukur
 - [x] Tambahkan gambaran sistem yang berjalan (proses manual saat ini) vs sistem yang diusulkan
-- [ ] Gambaran umum sistem yang akan dibangun belum jelas — perjelas di Bab I atau Bab III
+- [x] Gambaran umum sistem yang akan dibangun belum jelas — perjelas di Bab I atau Bab III
 
 ### Teknis Penulisan
-- [ ] Hapus kata ambigu: *atas, bawah, sebelumnya, setelahnya, tersebut* — ganti dengan rujukan eksplisit ke nomor gambar/tabel/bab
+- [x] Hapus kata ambigu: *atas, bawah, sebelumnya, setelahnya, tersebut* — ganti dengan rujukan eksplisit ke nomor gambar/tabel/bab
 - [x] Cek semua kata asing — pastikan ditulis *italic* (contoh: *livestreaming*, *clipping*, *threshold*, *replay buffer*, dll.)
 - [x] Hapus kata ganti orang "penulis" — ganti dengan kalimat pasif atau subjek sistem
 - [x] Rapikan penulisan semua tabel (format, alignment, konsistensi kolom)
 
 ### Struktur & Kelengkapan
-- [ ] Rumus 2.1–2.6 & 3.1 — tambahkan contoh implementasi ke konteks topik permasalahan nyata (bukan hanya rumus abstrak)
-- [ ] Setiap gambar & tabel harus memiliki kalimat penjelasan yang merujuk ke nomor gambar/tabel secara eksplisit
-- [ ] Cek relevansi database (tabel `configurations` & `highlight_logs`) dengan use case yang ada
+- [x] Rumus 2.1–2.6 & 3.1 — tambahkan contoh implementasi ke konteks topik permasalahan nyata (bukan hanya rumus abstrak)
+- [x] Setiap gambar & tabel harus memiliki kalimat penjelasan yang merujuk ke nomor gambar/tabel secara eksplisit
+- [x] Cek relevansi database (tabel `configurations` & `highlight_logs`) dengan use case yang ada
 
 ---
 
