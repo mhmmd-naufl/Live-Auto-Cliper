@@ -218,17 +218,17 @@ project-root/
 Proposal masih dalam proses revisi. Berikut daftar poin revisi dari dosen yang perlu diselesaikan secara bertahap. Claude harus aware terhadap poin-poin ini saat membantu revisi dokumen.
 
 ### Konten & Substansi
-- [ ] Perjelas permasalahan yang dialami mitra (CV. Alzen Metro Data) — lebih spesifik dan terstruktur
+- [x] Perjelas permasalahan yang dialami mitra (CV. Alzen Metro Data) — lebih spesifik dan terstruktur
 - [ ] Cek abstrak — eliminasi kalimat yang terindikasi bersumber dari AI
-- [ ] Perjelas tujuan TA — lebih konkret dan terukur
-- [ ] Tambahkan gambaran sistem yang berjalan (proses manual saat ini) vs sistem yang diusulkan
+- [x] Perjelas tujuan TA — lebih konkret dan terukur
+- [x] Tambahkan gambaran sistem yang berjalan (proses manual saat ini) vs sistem yang diusulkan
 - [ ] Gambaran umum sistem yang akan dibangun belum jelas — perjelas di Bab I atau Bab III
 
 ### Teknis Penulisan
 - [ ] Hapus kata ambigu: *atas, bawah, sebelumnya, setelahnya, tersebut* — ganti dengan rujukan eksplisit ke nomor gambar/tabel/bab
-- [ ] Cek semua kata asing — pastikan ditulis *italic* (contoh: *livestreaming*, *clipping*, *threshold*, *replay buffer*, dll.)
-- [ ] Hapus kata ganti orang "penulis" — ganti dengan kalimat pasif atau subjek sistem
-- [ ] Rapikan penulisan semua tabel (format, alignment, konsistensi kolom)
+- [x] Cek semua kata asing — pastikan ditulis *italic* (contoh: *livestreaming*, *clipping*, *threshold*, *replay buffer*, dll.)
+- [x] Hapus kata ganti orang "penulis" — ganti dengan kalimat pasif atau subjek sistem
+- [x] Rapikan penulisan semua tabel (format, alignment, konsistensi kolom)
 
 ### Struktur & Kelengkapan
 - [ ] Rumus 2.1–2.6 & 3.1 — tambahkan contoh implementasi ke konteks topik permasalahan nyata (bukan hanya rumus abstrak)

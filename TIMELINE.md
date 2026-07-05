@@ -44,7 +44,7 @@
 - [x] Test koneksi OBS-WebSocket secara manual (via browser atau Postman)
 - [x] Aktifkan & test Replay Buffer OBS — coba simpan manual
 - [x] Install FFmpeg & daftarkan ke environment variables sistem
-- [ ] Test FFmpeg stream copy manual di terminal: `ffmpeg -ss 5 -i input.mp4 -c copy output.mp4`
+- [x] Test FFmpeg stream copy manual di terminal: `ffmpeg -ss 5 -i input.mp4 -c copy output.mp4`
 - [x] Install Python 3.10+, Node.js 18+, Git
 - [x] Buat repository Git (GitHub/GitLab) untuk project
 - [x] Setup Python virtual environment: `python -m venv venv`

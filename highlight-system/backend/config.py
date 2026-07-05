@@ -9,7 +9,7 @@ OBS_PORT = int(os.getenv("OBS_PORT", "4455"))
 OBS_PASSWORD = os.getenv("OBS_PASSWORD", "")
 
 # Audio
-AUDIO_DEVICE_ID = int(os.getenv("AUDIO_DEVICE_ID", "12"))
+AUDIO_DEVICE_ID = int(os.getenv("AUDIO_DEVICE_ID", "13"))
 THRESHOLD_DB = float(os.getenv("THRESHOLD_DB", "-19.0"))
 PERSISTENCE_DURATION = float(os.getenv("PERSISTENCE_DURATION", "2.0"))
 

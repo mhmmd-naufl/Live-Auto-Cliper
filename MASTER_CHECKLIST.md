@@ -45,7 +45,7 @@
 - [x] Test koneksi OBS-WebSocket secara manual (via browser WebSocket tool)
 - [x] Aktifkan & konfigurasi Replay Buffer di OBS — test simpan manual
 - [x] Install FFmpeg & daftarkan ke system environment variables
-- [ ] Test FFmpeg stream copy manual: `ffmpeg -ss [offset] -i input.mp4 -c copy output.mp4`
+- [x] Test FFmpeg stream copy manual: `ffmpeg -ss [offset] -i input.mp4 -c copy output.mp4`
 - [x] Install Python 3.10+ 
 - [x] Install Node.js 18+ dan npm
 - [x] Install Git & buat repository project (GitHub/GitLab)
@@ -84,8 +84,8 @@
 ### Iterasi 1 — Integrasi & Konektivitas Sistem
 - [x] Buat koneksi OBS-WebSocket dari Python menggunakan `obsws-python`
 - [ ] Implementasi auto-reconnect jika koneksi terputus
-- [ ] Subscribe ke event audio dari OBS
-- [ ] Terima & print data audio mentah dari OBS ke terminal
+- [x] Subscribe ke event audio dari OBS
+- [x] Terima & print data audio mentah dari OBS ke terminal
 - [x] Buat endpoint FastAPI: `GET /status` — status koneksi OBS
 - [x] Buat endpoint FastAPI: `POST /connect` — inisiasi koneksi ke OBS
 - [x] Buat endpoint FastAPI: `POST /disconnect` — putus koneksi
