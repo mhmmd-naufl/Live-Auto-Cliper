@@ -5,6 +5,39 @@ import numpy as np
 import sounddevice as sd
 from config import AUDIO_DEVICE_ID, THRESHOLD_DB, PERSISTENCE_DURATION
 
+
+def get_input_devices():
+    """
+    Return list of available input-capable audio devices.
+    Each entry: {'id': int, 'name': str, 'max_input_channels': int, 'default_samplerate': float}
+    """
+    try:
+        devices = sd.query_devices()
+    except Exception as e:
+        print(f"❌ Failed to query audio devices: {e}")
+        return []
+
+    input_devices = []
+    for idx, dev in enumerate(devices):
+        if dev.get('max_input_channels', 0) > 0:
+            input_devices.append({
+                'id': idx,
+                'name': dev.get('name'),
+                'max_input_channels': int(dev.get('max_input_channels', 0)),
+                'default_samplerate': float(dev.get('default_samplerate', 0)),
+            })
+    return input_devices
+
+
+def print_input_devices():
+    devs = get_input_devices()
+    if not devs:
+        print("No input audio devices found.")
+        return
+    print("Available input audio devices:")
+    for d in devs:
+        print(f"  [{d['id']}] {d['name']} - channels: {d['max_input_channels']} - rate: {d['default_samplerate']}")
+
 class AudioMonitor:
     def __init__(self):
         self.connected = False
