@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import init_db
@@ -12,7 +12,7 @@ from routers import logs as logs_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    print("✅ Database tersambung")
+    print("âœ… Database tersambung")
     yield
 
 
@@ -88,3 +88,49 @@ async def monitor_status():
         "threshold_db": audio_monitor.threshold_db,
         "persistence_duration": audio_monitor.persistence_duration,
     }
+
+
+@app.post("/obs/monitor/threshold")
+async def update_threshold(value: float):
+    audio_monitor.threshold_db = value
+    print(f"Threshold diupdate: {value} dBFS")
+    return {"success": True, "threshold_db": value}
+
+
+@app.post("/obs/monitor/persistence")
+async def update_persistence(value: float):
+    if value <= 0:
+        return {"success": False, "message": "Persistence harus lebih dari 0"}
+    audio_monitor.persistence_duration = value
+    print(f"Persistence diupdate: {value}s")
+    return {"success": True, "persistence_duration": value}
+
+# --- File Picker ---
+@app.get("/file-picker")
+async def open_file_picker():
+    import tkinter as tk
+    from tkinter import filedialog
+    from concurrent.futures import ThreadPoolExecutor
+    import asyncio
+    
+    def pick_folder():
+        """Buka dialog folder picker di thread terpisah."""
+        root = tk.Tk()
+        root.withdraw() 
+        root.attributes('-topmost', True)
+        
+        folder_path = filedialog.askdirectory(
+            title="Pilih Folder Penyimpanan Hasil Highlight",
+            initialdir="D:\\Kuliah\\TA\\Pre-TA\\Project",
+        )
+        root.destroy()
+        return folder_path
+    
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor() as executor:
+        folder_path = await loop.run_in_executor(executor, pick_folder)
+    
+    if not folder_path:
+        return {"success": False, "message": "Folder tidak dipilih", "path": None}
+    
+    return {"success": True, "message": "Folder berhasil dipilih", "path": folder_path}

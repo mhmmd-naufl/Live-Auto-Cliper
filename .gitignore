@@ -5,3 +5,6 @@ file-hasil/
 *.mp4
 *.mkv
 __pycache__/
+.aider*
+.continue
+.env

@@ -1,216 +1,189 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const ConnectionPanel = () => {
-  // State untuk menyimpan konfigurasi form
-  const [config, setConfig] = useState({
-    obs_host: "127.0.0.1",
-    obs_port: "4455",
-    obs_password: "Test123",
-  });
+const API = "http://127.0.0.1:8000";
+const SESSION_KEY = "obs_session";
 
-  // State status koneksi & loading
-  const [isConnected, setIsConnected] = useState(false);
+export default function ConnectionPanel({
+  isConnected,
+  setIsConnected,
+  obsConfig,
+  setObsConfig,
+}) {
+  const [localConfig, setLocalConfig] = useState(() => ({
+    host: obsConfig?.obs_host || "127.0.0.1",
+    port: String(obsConfig?.obs_port || 4455),
+    password: obsConfig?.obs_password || "",
+  }));
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Handler untuk mendeteksi perubahan input form
+  // Auto-reconnect saat refresh jika ada session tersimpan
+  useEffect(() => {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (!saved || isConnected) return;
+
+    const session = JSON.parse(saved);
+    setLocalConfig(session);
+
+    (async () => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams({
+          host: session.host,
+          port: session.port,
+          password: session.password,
+        });
+        const res = await fetch(`${API}/obs/connect?${params}`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (data.success) {
+          setIsConnected(true);
+          setObsConfig({
+            obs_host: session.host,
+            obs_port: Number(session.port),
+            obs_password: session.password,
+          });
+          setMessage("✅ Reconnect otomatis berhasil");
+          setTimeout(() => setMessage(""), 3000);
+        } else {
+          sessionStorage.removeItem(SESSION_KEY);
+        }
+      } catch {
+        sessionStorage.removeItem(SESSION_KEY);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setConfig((prev) => ({ ...prev, [name]: value }));
+    setLocalConfig((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Fungsi Menghubungkan ke OBS (POST /connect)
-  const handleConnect = async (e) => {
-    e.preventDefault();
+  const handleConnect = async () => {
     setIsLoading(true);
     setMessage("");
-
     try {
-      const response = await fetch("http://127.0.0.1:8000/obs/connect", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          obs_host: config.obs_host,
-          obs_port: parseInt(config.obs_port, 10),
-          obs_password: config.obs_password,
-        }),
+      const params = new URLSearchParams({
+        host: localConfig.host,
+        port: localConfig.port,
+        password: localConfig.password,
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const res = await fetch(`${API}/obs/connect?${params}`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
         setIsConnected(true);
-        setMessage("Berhasil terhubung ke OBS Studio!");
+        setObsConfig({
+          obs_host: localConfig.host,
+          obs_port: Number(localConfig.port),
+          obs_password: localConfig.password,
+        });
+        // Simpan session supaya auto-reconnect saat refresh
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(localConfig));
+        setMessage("✅ Terhubung ke OBS Studio");
       } else {
-        setMessage(`Gagal: ${data.detail || "Terjadi kesalahan"}`);
+        setMessage(`❌ ${data.message}`);
       }
     } catch {
-      setMessage("Gagal menghubungi backend. Pastikan FastAPI sudah jalan.");
+      setMessage("❌ Gagal menghubungi backend");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fungsi Memutuskan Koneksi (POST /disconnect)
   const handleDisconnect = async () => {
     setIsLoading(true);
-    setMessage("");
-
     try {
-      const response = await fetch("http://127.0.0.1:8000/obs/disconnect", {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        setIsConnected(false);
-        setMessage("Koneksi ke OBS berhasil diputus.");
-      } else {
-        setMessage("Gagal memutuskan koneksi.");
-      }
+      await fetch(`${API}/obs/disconnect`, { method: "POST" });
+      setIsConnected(false);
+      sessionStorage.removeItem(SESSION_KEY);
+      setMessage("Koneksi diputus");
     } catch {
-      setMessage("Gagal menghubungi backend.");
+      setMessage("❌ Gagal memutus koneksi");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const fields = [
+    { label: "Host / IP Address", name: "host", type: "text" },
+    { label: "Port", name: "port", type: "number" },
+    { label: "Password", name: "password", type: "password" },
+  ];
+
   return (
-    <div style={styles.card}>
-      <h2 style={styles.title}>Koneksi OBS Studio</h2>
+    <div className="bg-[#16171f] rounded-xl border border-[#2a2b35] p-4 h-full flex flex-col">
+      <h3 className="text-sm font-bold tracking-wider text-white mb-4">
+        OBS — WEBSOCKET
+      </h3>
 
-      {/* Indikator Status */}
-      <div style={styles.statusContainer}>
-        <span>Status: </span>
-        <span
-          style={
-            isConnected ? styles.statusConnected : styles.statusDisconnected
-          }
-        >
-          {isConnected ? "● Terhubung" : "○ Terputus"}
-        </span>
-      </div>
+      <div className="flex flex-col gap-3 flex-1">
+        {fields.map(({ label, name, type }) => (
+          <div key={name} className="flex flex-col gap-1">
+            <label className="text-xs text-gray-400">{label}</label>
+            <input
+              type={type}
+              name={name}
+              value={localConfig[name]}
+              onChange={handleChange}
+              disabled={isConnected || isLoading}
+              className="w-full bg-[#0e0f14] border border-[#2a2b35] rounded px-2 py-1.5 text-sm text-white disabled:opacity-50 focus:outline-none focus:border-yellow-500"
+            />
+          </div>
+        ))}
 
-      {/* Form Input */}
-      <form onSubmit={handleConnect} style={styles.form}>
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>OBS Host / IP</label>
-          <input
-            type="text"
-            name="obs_host"
-            value={config.obs_host}
-            onChange={handleChange}
-            disabled={isConnected || isLoading}
-            style={styles.input}
-            required
-          />
+        {/* Status koneksi */}
+        <div className="mt-2 pt-2 border-t border-[#2a2b35]">
+          {isConnected ? (
+            <span className="text-xs text-green-400 font-bold flex items-center gap-1">
+              ● Terhubung ke OBS Studio
+            </span>
+          ) : (
+            <span className="text-xs text-gray-500 flex items-center gap-1">
+              ● Terputus
+            </span>
+          )}
         </div>
 
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>OBS Port</label>
-          <input
-            type="number"
-            name="obs_port"
-            value={config.obs_port}
-            onChange={handleChange}
-            disabled={isConnected || isLoading}
-            style={styles.input}
-            required
-          />
-        </div>
-
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>OBS Password</label>
-          <input
-            type="password"
-            name="obs_password"
-            value={config.obs_password}
-            onChange={handleChange}
-            disabled={isConnected || isLoading}
-            style={styles.input}
-            placeholder="Masukkan password websocket OBS"
-          />
-        </div>
-
-        {/* Tombol Aksi */}
-        {!isConnected ? (
-          <button type="submit" disabled={isLoading} style={styles.btnConnect}>
-            {isLoading ? "Menghubungkan..." : "Connect ke OBS"}
-          </button>
-        ) : (
+        {/* Connect/Disconnect button */}
+        <div className="flex gap-2 pt-2">
           <button
-            type="button"
-            onClick={handleDisconnect}
+            onClick={isConnected ? handleDisconnect : handleConnect}
             disabled={isLoading}
-            style={styles.btnDisconnect}
+            className={`flex-1 px-5 py-2 rounded text-sm font-bold transition-colors disabled:opacity-50
+              ${
+                isConnected
+                  ? "bg-red-700 hover:bg-red-600 text-white"
+                  : "bg-blue-600 hover:bg-blue-500 text-white"
+              }`}
           >
-            {isLoading ? "Memutuskan..." : "Disconnect"}
+            {isLoading
+              ? "Menghubungkan..."
+              : isConnected
+                ? "Disconnect"
+                : "Connect"}
           </button>
-        )}
-      </form>
+        </div>
 
-      {/* Log Pesan */}
-      {message && <p style={styles.message}>{message}</p>}
+        {/* Message */}
+        {message && (
+          <div
+            className={`text-xs rounded p-2 mt-1 ${
+              message.startsWith("✅")
+                ? "text-green-400 bg-green-900/20 border border-green-900/50"
+                : message.includes("diputus")
+                  ? "text-gray-400"
+                  : "text-red-400 bg-red-900/20 border border-red-900/50"
+            }`}
+          >
+            {message}
+          </div>
+        )}
+      </div>
     </div>
   );
-};
-
-// CSS-in-JS Sederhana untuk Styling Dashboard
-const styles = {
-  card: {
-    background: "#1e1e24",
-    color: "#fff",
-    padding: "24px",
-    borderRadius: "8px",
-    width: "350px",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-    fontFamily: "Arial, sans-serif",
-    margin: "20px auto",
-  },
-  title: {
-    margin: "0 0 16px 0",
-    fontSize: "20px",
-    borderBottom: "1px solid #333",
-    paddingBottom: "8px",
-  },
-  statusContainer: { marginBottom: "20px", fontSize: "14px" },
-  statusConnected: { color: "#4edf7a", fontWeight: "bold" },
-  statusDisconnected: { color: "#ff4d4d", fontWeight: "bold" },
-  form: { display: "flex", flexDirection: "column", gap: "12px" },
-  inputGroup: { display: "flex", flexDirection: "column", gap: "4px" },
-  label: { fontSize: "12px", color: "#aaa" },
-  input: {
-    padding: "8px",
-    borderRadius: "4px",
-    border: "1px solid #444",
-    background: "#2a2a35",
-    color: "#fff",
-  },
-  btnConnect: {
-    padding: "10px",
-    background: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-  btnDisconnect: {
-    padding: "10px",
-    background: "#dc3545",
-    color: "#fff",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-  message: {
-    marginTop: "12px",
-    fontSize: "12px",
-    textAlign: "center",
-    color: "#ddd",
-  },
-};
-
-export default ConnectionPanel;
+}
