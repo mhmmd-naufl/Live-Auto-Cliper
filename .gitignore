@@ -8,3 +8,5 @@ __pycache__/
 .aider*
 .continue
 .env
+Testing/
+highlight-system/graphify-out/
