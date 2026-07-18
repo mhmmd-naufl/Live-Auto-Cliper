@@ -10,3 +10,4 @@ __pycache__/
 .env
 Testing/
 highlight-system/graphify-out/
+highlight-system\backend\.env
