@@ -12,7 +12,7 @@ from routers import logs as logs_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    print("âœ… Database tersambung")
+    print("Database tersambung")
     yield
 
 
@@ -58,6 +58,7 @@ async def disconnect_obs():
 
 @app.get("/obs/status")
 async def obs_status():
+    await obs_client.ping()
     return obs_client.get_status()
 
 
@@ -82,13 +83,14 @@ async def stop_monitor():
 
 @app.get("/obs/monitor/status")
 async def monitor_status():
+    from services import offset_calculator
     return {
         "connected": audio_monitor.connected,
         "current_dbfs": round(audio_monitor.current_dbfs, 2),
         "threshold_db": audio_monitor.threshold_db,
         "persistence_duration": audio_monitor.persistence_duration,
+        "pre_roll": offset_calculator.PRE_ROLL,
     }
-
 
 @app.post("/obs/monitor/threshold")
 async def update_threshold(value: float):
@@ -104,6 +106,15 @@ async def update_persistence(value: float):
     audio_monitor.persistence_duration = value
     print(f"Persistence diupdate: {value}s")
     return {"success": True, "persistence_duration": value}
+
+@app.post("/obs/monitor/preroll")
+async def update_preroll(value: float):
+    if value < 0:
+        return {"success": False, "message": "Pre-roll tidak boleh negatif"}
+    from services import offset_calculator
+    offset_calculator.PRE_ROLL = value
+    print(f"Pre-roll diupdate: {value}s")
+    return {"success": True, "pre_roll": value}
 
 # --- File Picker ---
 @app.get("/file-picker")

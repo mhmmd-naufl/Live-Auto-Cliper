@@ -4,6 +4,22 @@ import obsws_python as obs
 from config import OBS_HOST, OBS_PORT, OBS_PASSWORD
 
 
+def _parse_obs_error(e: Exception) -> str:
+    msg = str(e).lower()
+    if "connection refused" in msg or "10061" in msg:
+        return "Koneksi ke OBS gagal. Pastikan OBS Studio sudah dibuka dan WebSocket Server sudah diaktifkan di Tools → WebSocket Server Settings."
+    elif "authentication" in msg or "auth" in msg or "password" in msg:
+        return "Password WebSocket OBS salah. Periksa kembali password di OBS Settings."
+    elif "timed out" in msg or "timeout" in msg or "10060" in msg:
+        return "Koneksi timeout. Periksa host dan port OBS WebSocket."
+    elif "name or service not known" in msg or "getaddrinfo" in msg:
+        return "Host tidak ditemukan. Periksa alamat IP OBS."
+    elif "10064" in msg or "10065" in msg:
+        return "Host tidak dapat dijangkau. Periksa jaringan dan alamat IP OBS."
+    else:
+        return f"Gagal terhubung ke OBS: {str(e)}"
+
+
 class OBSClient:
     def __init__(self):
         self.client = None
@@ -14,6 +30,7 @@ class OBSClient:
         self._reconnect_task = None
         self._reconnect_interval = 5
         self._explicit_disconnect = False
+        self._last_error = ""
 
     async def _create_client_sync(self, host, port, password):
         loop = asyncio.get_event_loop()
@@ -24,11 +41,33 @@ class OBSClient:
         try:
             self.client = await self._create_client_sync(self.host, self.port, self.password)
             self.connected = True
+            self._last_error = ""
             print(f"✅ Connected to OBS at {self.host}:{self.port}")
-            return True
+            return True, ""
         except Exception as e:
             self.connected = False
-            print(f"❌ Failed to connect to OBS: {e}")
+            self.client = None
+            friendly_msg = _parse_obs_error(e)
+            self._last_error = friendly_msg
+            print(f"❌ Failed to connect to OBS: {friendly_msg}")
+            return False, friendly_msg
+
+    async def ping(self) -> bool:
+        """Cek apakah koneksi OBS masih aktif dengan request ringan."""
+        if not self.client:
+            self.connected = False
+            return False
+        try:
+            loop = asyncio.get_event_loop()
+            fn = partial(self.client.get_version)
+            await loop.run_in_executor(None, fn)
+            self.connected = True
+            return True
+        except Exception:
+            self.connected = False
+            self.client = None
+            if not self._explicit_disconnect:
+                self._start_reconnect_loop()
             return False
 
     async def connect(self, host: str = OBS_HOST, port: int = OBS_PORT, password: str = OBS_PASSWORD, enable_reconnect: bool = True) -> dict:
@@ -37,16 +76,15 @@ class OBSClient:
         self.password = password
         self._explicit_disconnect = False
 
-        ok = await self._attempt_connect()
+        ok, error_msg = await self._attempt_connect()
+
         if enable_reconnect and self._reconnect_task is None:
             self._start_reconnect_loop()
 
         if ok:
             return {"success": True, "message": f"Connected to OBS at {host}:{port}"}
         else:
-            if enable_reconnect:
-                return {"success": False, "message": f"Failed to connect to OBS at {host}:{port} — will retry"}
-            return {"success": False, "message": f"Failed to connect to OBS at {host}:{port}"}
+            return {"success": False, "message": error_msg}
 
     def _start_reconnect_loop(self):
         if self._reconnect_task is None or self._reconnect_task.done():
@@ -90,6 +128,7 @@ class OBSClient:
             "connected": self.connected,
             "host": self.host,
             "port": self.port,
+            "last_error": self._last_error,
             "auto_reconnect": (self._reconnect_task is not None and not self._reconnect_task.done()),
         }
 
@@ -104,6 +143,7 @@ class OBSClient:
         except Exception as e:
             print(f"⚠️ OBS client call failed: {e}")
             self.connected = False
+            self.client = None
             if not self._explicit_disconnect:
                 self._start_reconnect_loop()
             return {"success": False, "message": str(e)}

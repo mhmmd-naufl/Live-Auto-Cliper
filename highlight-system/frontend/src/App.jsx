@@ -109,6 +109,19 @@ export default function App() {
     return () => clearInterval(pollRef.current);
   }, [isMonitoring, logLimit]);
 
+  // Poll status OBS terus-menerus (bukan hanya saat monitoring)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API}/obs/status`);
+        const data = await res.json();
+        setIsConnected(data.connected);
+      } catch { /* silent */ }
+    }, 2000); // cek setiap 2 detik
+
+    return () => clearInterval(interval);
+  }, []);
+
   const formatTime = (s) => {
     const h = String(Math.floor(s / 3600)).padStart(2, "0");
     const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
