@@ -7,10 +7,6 @@ from config import AUDIO_DEVICE_ID, THRESHOLD_DB, PERSISTENCE_DURATION
 
 
 def get_input_devices():
-    """
-    Return list of available input-capable audio devices.
-    Each entry: {'id': int, 'name': str, 'max_input_channels': int, 'default_samplerate': float}
-    """
     try:
         devices = sd.query_devices()
     except Exception as e:
@@ -38,6 +34,7 @@ def print_input_devices():
     for d in devs:
         print(f"  [{d['id']}] {d['name']} - channels: {d['max_input_channels']} - rate: {d['default_samplerate']}")
 
+
 class AudioMonitor:
     def __init__(self):
         self.connected = False
@@ -56,6 +53,10 @@ class AudioMonitor:
         self._dbfs_buffer = []
         self._buffer_size = 8
 
+        # Print periodic dBFS ke terminal
+        self._last_print_time = 0.0
+        self._print_interval = 0.5
+
     def magnitude_to_dbfs(self, magnitude: float) -> float:
         if magnitude <= 0:
             return -60.0
@@ -65,10 +66,11 @@ class AudioMonitor:
         if status:
             print(f"⚠️ Audio status: {status}")
 
+        # Hitung RMS dari frame audio
         rms = np.sqrt(np.mean(indata ** 2))
         dbfs = self.magnitude_to_dbfs(float(rms))
 
-        # Smoothing
+        # Smoothing (moving average)
         self._dbfs_buffer.append(dbfs)
         if len(self._dbfs_buffer) > self._buffer_size:
             self._dbfs_buffer.pop(0)
@@ -76,16 +78,24 @@ class AudioMonitor:
         avg_dbfs = sum(self._dbfs_buffer) / len(self._dbfs_buffer)
         self.current_dbfs = avg_dbfs
 
+        # Cetak dBFS ke terminal setiap 0.5 detik
+        now = time.time()
+        if now - self._last_print_time >= self._print_interval:
+            self._last_print_time = now
+            print(f"📊 dBFS: {avg_dbfs:6.1f}")
+
+        # Cek threshold (hanya dipanggil SEKALI)
         self._check_threshold(avg_dbfs)
 
     def _check_threshold(self, dbfs: float):
         now = time.time()
 
-        # Cooldown check
+        # Cooldown check — cegah trigger terlalu sering
         if now < self.last_trigger_time + self.cooldown_seconds:
             return
 
         if dbfs >= self.threshold_db:
+            # Audio di atas threshold — catat waktu mulai
             if self.t_start is None:
                 self.t_start = now
                 print(f"🔊 Potensi highlight | dBFS: {dbfs:.1f}")
@@ -98,12 +108,11 @@ class AudioMonitor:
         else:
             # Audio turun di bawah threshold
             if self._trigger_valid:
-                # T_End tercapai — sekarang baru eksekusi
+                # Trigger sudah valid, sekarang audio turun — eksekusi
                 print(f"🔽 Audio turun (T_End) | Eksekusi SaveReplayBuffer...")
                 if self.on_trigger:
-                    # Simpan nilai dBFS terakhir ke trigger_engine
                     from services.trigger_engine import trigger_engine
-                    trigger_engine.last_trigger_dbfs = dbfs  # ← tambahkan ini
+                    trigger_engine.last_trigger_dbfs = dbfs
                     asyncio.run_coroutine_threadsafe(
                         self.on_trigger(self.t_start), self._loop
                     )
@@ -149,4 +158,6 @@ class AudioMonitor:
         self.t_start = None
         print("🛑 Audio monitor stopped")
 
+
+# Instance global
 audio_monitor = AudioMonitor()

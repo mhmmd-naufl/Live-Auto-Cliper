@@ -4,7 +4,8 @@ import glob
 import time
 import json
 from datetime import datetime
-from config import REPLAY_BUFFER_PATH, OUTPUT_PATH, REPLAY_BUFFER_DURATION
+# HAPUS OUTPUT_PATH dari impor config di bawah ini
+from config import REPLAY_BUFFER_PATH, REPLAY_BUFFER_DURATION
 from services.offset_calculator import calculate_cut_point
 
 
@@ -37,8 +38,8 @@ def get_video_duration(video_path: str) -> float | None:
         print(f"⚠️ ffprobe error: {e}")
     return None
 
-
-def run_ffmpeg_cut(t_start: float, t_save: float) -> dict:
+# TAMBAHKAN parameter dynamic_output_path di sini
+def run_ffmpeg_cut(t_start: float, t_save: float, dynamic_output_path: str) -> dict:
     try:
         # Tunggu OBS selesai menulis file
         print("⏳ Menunggu Replay Buffer selesai ditulis...")
@@ -64,14 +65,15 @@ def run_ffmpeg_cut(t_start: float, t_save: float) -> dict:
         print(f"📐 Posisi momen (offset): {offset}s | Titik potong: {cut_start}s "
               f"| T_Start={t_start:.2f} | T_Save={t_save:.2f}")
 
-        # Siapkan output file
+        # Siapkan output file menggunakan dynamic_output_path
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_filename = f"highlight_{timestamp_str}.mp4"
-        output_file = os.path.join(OUTPUT_PATH, output_filename)
-        os.makedirs(OUTPUT_PATH, exist_ok=True)
+        
+        # UBAH PENGGUNAAN PATH DI DUA BARIS INI
+        output_file = os.path.join(dynamic_output_path, output_filename)
+        os.makedirs(dynamic_output_path, exist_ok=True)
 
         # FFmpeg: potong dari cut_start sampai akhir file (tanpa -t)
-        # Tidak pakai -t karena kita mau ambil sampai ujung file yang tersedia
         cmd = [
             "ffmpeg",
             "-ss", str(cut_start),

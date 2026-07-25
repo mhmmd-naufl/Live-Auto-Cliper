@@ -1,3 +1,5 @@
 {
-  "claudeCodeChat.permissions.yoloMode": false
+  "claudeCodeChat.permissions.yoloMode": false,
+  "codesnap.backgroundColor": "#FFFFFF",
+  "codesnap.transparentBackground": true
 }

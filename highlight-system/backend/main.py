@@ -115,6 +115,13 @@ async def update_preroll(value: float):
     offset_calculator.PRE_ROLL = value
     print(f"Pre-roll diupdate: {value}s")
     return {"success": True, "pre_roll": value}
+    
+@app.post("/obs/monitor/filepath")
+async def update_filepath(value: str):
+    import config
+    config.OUTPUT_PATH = value
+    print(f"Path penyimpanan diupdate: {value}")
+    return {"success": True, "file_path": value}
 
 # --- File Picker ---
 @app.get("/file-picker")

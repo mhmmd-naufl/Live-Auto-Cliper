@@ -1,13 +1,14 @@
 import asyncio
 import time
+from sqlalchemy import select
 from services.obs_client import obs_client
 from services.ffmpeg_runner import run_ffmpeg_cut
 from database import AsyncSessionLocal
-from models import HighlightLog
+from models import HighlightLog, Configuration
+import config
 
 
 async def save_log(trigger_value: float, result: dict):
-    """Simpan hasil trigger ke tabel highlight_logs."""
     try:
         async with AsyncSessionLocal() as session:
             log = HighlightLog(
@@ -30,10 +31,6 @@ class TriggerEngine:
         self.last_trigger_dbfs = -60.0
 
     async def on_audio_trigger(self, t_start: float):
-        """
-        Dipanggil AudioMonitor saat trigger valid dan audio
-        sudah turun kembali di bawah threshold (T_End).
-        """
         if self.is_processing:
             print("⏸️  Trigger diabaikan — proses sebelumnya masih berjalan")
             return
@@ -64,15 +61,28 @@ class TriggerEngine:
                 )
                 return
 
-            print("💾 SaveReplayBuffer berhasil — menjalankan FFmpeg...")
+            print("💾 SaveReplayBuffer berhasil — mengambil path & menjalankan FFmpeg...")
 
-            # Langkah 3: Jalankan FFmpeg di thread terpisah
+            # --- TAMBAHAN: Ambil file_path terbaru dari Database ---
+            target_path = config.OUTPUT_PATH  # fallback jika DB kosong
+            try:
+                async with AsyncSessionLocal() as session:
+                    res = await session.execute(select(Configuration).order_by(Configuration.id.desc()))
+                    latest_config = res.scalar_one_or_none()
+                    if latest_config and latest_config.file_path:
+                        target_path = latest_config.file_path
+                        print(f"🗄️ Path penyimpanan dari Database: {target_path}")
+            except Exception as db_err:
+                print(f"⚠️ Gagal mengambil path dari DB, pakai fallback: {db_err}")
+
+            # Langkah 3: Jalankan FFmpeg di thread terpisah (kirim target_path sebagai argumen ke-3)
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
                 None,
                 run_ffmpeg_cut,
                 t_start,
-                t_save
+                t_save,
+                target_path
             )
 
             # Langkah 4: Simpan log

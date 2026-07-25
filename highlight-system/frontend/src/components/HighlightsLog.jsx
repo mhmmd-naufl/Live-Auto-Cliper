@@ -10,9 +10,7 @@ export default function HighlightsLog({
   return (
     <div className="bg-[#16171f] rounded-xl border border-[#2a2b35] p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold tracking-wider text-white">
-          Highlights Log
-        </h3>
+        <h3 className="text-sm font-bold tracking-wider text-white">History</h3>
         {visibleLogs.length > 0 && (
           <button
             onClick={onClearAll}
@@ -114,7 +112,19 @@ function LogItem({ log, onDelete }) {
           </button>
         </div>
       </div>
-      <div className="text-gray-300 truncate mt-0.5">{log.filename || "-"}</div>
+      {/* Tampilkan filename jika SUCCESS, atau error_message jika FAILED */}
+      <div className="truncate mt-0.5">
+        {isSuccess ? (
+          <span className="text-gray-300">{log.filename || "-"}</span>
+        ) : (
+          <span
+            className="text-red-400"
+            title={log.error_message || "Unknown error"}
+          >
+            ⚠️ {log.error_message || "Terjadi kesalahan"}
+          </span>
+        )}
+      </div>
       <div className="flex justify-between text-gray-600 mt-0.5">
         <span>{log.trigger_value?.toFixed(1)} dBFS</span>
         <span>{log.duration?.toFixed(1)}s</span>
