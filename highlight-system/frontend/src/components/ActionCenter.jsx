@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import toast from "react-hot-toast";
 
 const API = "http://127.0.0.1:8000";
 
@@ -23,18 +24,8 @@ export default function ActionCenter({
 
   const [folderPath, setFolderPath] = useState("");
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
   const [browsingFolder, setBrowsingFolder] = useState(false);
 
-  const messageTimeoutRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
-    };
-  }, []);
-
-  // Load konfigurasi awal dari backend
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -80,8 +71,7 @@ export default function ActionCenter({
       const data = await res.json();
       if (data.success && data.path) setFolderPath(data.path);
     } catch (err) {
-      console.error("File picker error:", err);
-      setMessage("❌ Gagal membuka browser folder");
+      toast.error("Gagal membuka browser folder");
     } finally {
       setBrowsingFolder(false);
     }
@@ -150,12 +140,11 @@ export default function ActionCenter({
       return;
     }
     if (!folderPath.trim()) {
-      setMessage("❌ Folder penyimpanan hasil tidak boleh kosong");
+      toast.error("Folder penyimpanan hasil tidak boleh kosong");
       return;
     }
 
     setSaving(true);
-    setMessage("");
 
     try {
       const res = await fetch(`${API}/config`, {
@@ -168,6 +157,7 @@ export default function ActionCenter({
           threshold_db: tVal,
           file_path: folderPath,
           persistence_duration: pVal,
+          pre_roll: prVal,
         }),
       });
 
@@ -187,12 +177,9 @@ export default function ActionCenter({
       setActiveThreshold(tVal);
       setActivePersistence(pVal);
       setActivePreRoll(prVal);
-      setMessage("✅ Konfigurasi disimpan & diterapkan");
-
-      if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
-      messageTimeoutRef.current = setTimeout(() => setMessage(""), 3000);
+      toast.success("Konfigurasi disimpan & diterapkan");
     } catch (err) {
-      setMessage(`❌ ${err.message || "Gagal menghubungi backend"}`);
+      toast.error(err.message || "Gagal menghubungi backend");
     } finally {
       setSaving(false);
     }
@@ -208,9 +195,7 @@ export default function ActionCenter({
 
   return (
     <div className="bg-[#16171f] rounded-xl border border-[#2a2b35] p-4 h-full">
-      <h3 className="text-sm font-bold tracking-wider text-white mb-4">
-        Action Center
-      </h3>
+      <h3 className="text-sm font-bold tracking-wider text-white mb-4">Action Center</h3>
 
       <div className="flex flex-col gap-4">
         {/* Threshold Section */}
@@ -236,10 +221,7 @@ export default function ActionCenter({
           </div>
           <div className="flex gap-2 items-center">
             <input
-              type="range"
-              min={-60}
-              max={0}
-              step={1}
+              type="range" min={-60} max={0} step={1}
               value={sliderValue}
               onChange={handleSliderChange}
               className="flex-1 accent-yellow-400 cursor-pointer"
@@ -249,12 +231,9 @@ export default function ActionCenter({
               value={localThreshold}
               onChange={handleThresholdInput}
               className={`w-20 bg-[#0e0f14] border rounded px-2 py-1.5 text-xs text-center focus:outline-none
-                ${thresholdError
-                  ? "border-red-500 text-red-400"
-                  : thresholdChanged
-                    ? "border-blue-500 text-blue-400"
-                    : "border-[#2a2b35] text-white focus:border-yellow-500"
-                }`}
+                ${thresholdError ? "border-red-500 text-red-400"
+                  : thresholdChanged ? "border-blue-500 text-blue-400"
+                  : "border-[#2a2b35] text-white focus:border-yellow-500"}`}
             />
           </div>
           <div className="flex justify-between text-[10px] text-gray-600 mt-0.5">
@@ -290,12 +269,9 @@ export default function ActionCenter({
               onChange={handlePersistenceInput}
               disabled={isMonitoring}
               className={`w-24 bg-[#0e0f14] border rounded px-2 py-1.5 text-sm disabled:opacity-50 focus:outline-none
-                ${persistenceError
-                  ? "border-red-500 text-red-400"
-                  : persistenceChanged
-                    ? "border-blue-500 text-blue-400"
-                    : "border-[#2a2b35] text-white focus:border-yellow-500"
-                }`}
+                ${persistenceError ? "border-red-500 text-red-400"
+                  : persistenceChanged ? "border-blue-500 text-blue-400"
+                  : "border-[#2a2b35] text-white focus:border-yellow-500"}`}
             />
             <span className="text-xs text-gray-500">detik</span>
           </div>
@@ -328,12 +304,9 @@ export default function ActionCenter({
               onChange={handlePreRollInput}
               disabled={isMonitoring}
               className={`w-24 bg-[#0e0f14] border rounded px-2 py-1.5 text-sm disabled:opacity-50 focus:outline-none
-                ${preRollError
-                  ? "border-red-500 text-red-400"
-                  : preRollChanged
-                    ? "border-blue-500 text-blue-400"
-                    : "border-[#2a2b35] text-white focus:border-yellow-500"
-                }`}
+                ${preRollError ? "border-red-500 text-red-400"
+                  : preRollChanged ? "border-blue-500 text-blue-400"
+                  : "border-[#2a2b35] text-white focus:border-yellow-500"}`}
             />
             <span className="text-xs text-gray-500">detik</span>
           </div>
@@ -376,11 +349,6 @@ export default function ActionCenter({
           >
             {saving ? "Menyimpan..." : "SAVE"}
           </button>
-          {message && (
-            <span className={`text-xs ${message.startsWith("✅") ? "text-green-400" : "text-red-400"}`}>
-              {message}
-            </span>
-          )}
         </div>
 
         {isMonitoring && (

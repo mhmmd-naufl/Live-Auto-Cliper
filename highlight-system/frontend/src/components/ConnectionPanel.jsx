@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 const API = "http://127.0.0.1:8000";
 const SESSION_KEY = "obs_session";
@@ -15,7 +16,6 @@ export default function ConnectionPanel({
     password: obsConfig?.obs_password || "",
   }));
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   // Auto-reconnect saat refresh jika ada session tersimpan
   useEffect(() => {
@@ -33,9 +33,7 @@ export default function ConnectionPanel({
           port: session.port,
           password: session.password,
         });
-        const res = await fetch(`${API}/obs/connect?${params}`, {
-          method: "POST",
-        });
+        const res = await fetch(`${API}/obs/connect?${params}`, { method: "POST" });
         const data = await res.json();
         if (data.success) {
           setIsConnected(true);
@@ -44,8 +42,7 @@ export default function ConnectionPanel({
             obs_port: Number(session.port),
             obs_password: session.password,
           });
-          setMessage("✅ Reconnect otomatis berhasil");
-          setTimeout(() => setMessage(""), 3000);
+          toast.success("Reconnect otomatis berhasil");
         } else {
           sessionStorage.removeItem(SESSION_KEY);
         }
@@ -64,16 +61,13 @@ export default function ConnectionPanel({
 
   const handleConnect = async () => {
     setIsLoading(true);
-    setMessage("");
     try {
       const params = new URLSearchParams({
         host: localConfig.host,
         port: localConfig.port,
         password: localConfig.password,
       });
-      const res = await fetch(`${API}/obs/connect?${params}`, {
-        method: "POST",
-      });
+      const res = await fetch(`${API}/obs/connect?${params}`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
         setIsConnected(true);
@@ -82,14 +76,13 @@ export default function ConnectionPanel({
           obs_port: Number(localConfig.port),
           obs_password: localConfig.password,
         });
-        // Simpan session supaya auto-reconnect saat refresh
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(localConfig));
-        setMessage("✅ Terhubung ke OBS Studio");
+        toast.success("Terhubung ke OBS Studio");
       } else {
-        setMessage(`❌ ${data.message}`);
+        toast.error(data.message || "Gagal terhubung ke OBS Studio");
       }
     } catch {
-      setMessage("❌ Gagal menghubungi backend");
+      toast.error("Gagal menghubungi backend");
     } finally {
       setIsLoading(false);
     }
@@ -101,9 +94,9 @@ export default function ConnectionPanel({
       await fetch(`${API}/obs/disconnect`, { method: "POST" });
       setIsConnected(false);
       sessionStorage.removeItem(SESSION_KEY);
-      setMessage("Koneksi diputus");
+      toast("Koneksi OBS diputus", { icon: "🔌" });
     } catch {
-      setMessage("❌ Gagal memutus koneksi");
+      toast.error("Gagal memutus koneksi");
     } finally {
       setIsLoading(false);
     }
@@ -155,34 +148,14 @@ export default function ConnectionPanel({
             onClick={isConnected ? handleDisconnect : handleConnect}
             disabled={isLoading}
             className={`flex-1 px-5 py-2 rounded text-sm font-bold transition-colors disabled:opacity-50
-              ${
-                isConnected
-                  ? "bg-red-700 hover:bg-red-600 text-white"
-                  : "bg-blue-600 hover:bg-blue-500 text-white"
+              ${isConnected
+                ? "bg-red-700 hover:bg-red-600 text-white"
+                : "bg-blue-600 hover:bg-blue-500 text-white"
               }`}
           >
-            {isLoading
-              ? "Menghubungkan..."
-              : isConnected
-                ? "Disconnect"
-                : "Connect"}
+            {isLoading ? "Menghubungkan..." : isConnected ? "Disconnect" : "Connect"}
           </button>
         </div>
-
-        {/* Message */}
-        {message && (
-          <div
-            className={`text-xs rounded p-2 mt-1 ${
-              message.startsWith("✅")
-                ? "text-green-400 bg-green-900/20 border border-green-900/50"
-                : message.includes("diputus")
-                  ? "text-gray-400"
-                  : "text-red-400 bg-red-900/20 border border-red-900/50"
-            }`}
-          >
-            {message}
-          </div>
-        )}
       </div>
     </div>
   );

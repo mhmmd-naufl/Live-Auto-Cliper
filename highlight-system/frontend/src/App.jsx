@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import toast from "react-hot-toast";
 import ConnectionPanel from "./components/ConnectionPanel.jsx";
 import AudioChart from "./components/AudioChart.jsx";
 import ActionCenter from "./components/ActionCenter.jsx";
@@ -25,6 +26,7 @@ export default function App() {
 
   const sessionRef = useRef(null);
   const pollRef = useRef(null);
+  const prevLogIdsRef = useRef(new Set());
 
   useEffect(() => {
     (async () => {
@@ -37,8 +39,7 @@ export default function App() {
         if (cfgRes.ok) {
           const cfg = await cfgRes.json();
           if (cfg) {
-            if (typeof cfg.threshold_db === "number")
-              setThreshold(cfg.threshold_db);
+            if (typeof cfg.threshold_db === "number") setThreshold(cfg.threshold_db);
             setObsConfig({
               obs_host: cfg.obs_host || "127.0.0.1",
               obs_port: cfg.obs_port || 4455,
@@ -51,12 +52,28 @@ export default function App() {
           const logData = await logsRes.json();
           setLogs(logData);
           setHasMore(logData.length === INITIAL_LIMIT);
+          prevLogIdsRef.current = new Set(logData.map((l) => l.id));
         }
-      } catch {
-        /* silent */
-      }
+      } catch { /* silent */ }
     })();
   }, []);
+
+  // Refresh data saat tab aktif kembali
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && isMonitoring) {
+        fetch(`${API}/logs?limit=${logLimit}`)
+          .then((r) => r.json())
+          .then((data) => {
+            setLogs(data);
+            setHasMore(data.length === logLimit);
+          })
+          .catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [isMonitoring, logLimit]);
 
   const handleLoadMore = useCallback(async () => {
     const newLimit = logLimit + PAGE_SIZE;
@@ -68,17 +85,12 @@ export default function App() {
         setLogs(data);
         setHasMore(data.length === newLimit);
       }
-    } catch {
-      /* silent */
-    }
+    } catch { /* silent */ }
   }, [logLimit]);
 
   useEffect(() => {
     if (isMonitoring) {
-      sessionRef.current = setInterval(
-        () => setSessionTime((t) => t + 1),
-        1000,
-      );
+      sessionRef.current = setInterval(() => setSessionTime((t) => t + 1), 1000);
     }
     return () => {
       if (sessionRef.current) clearInterval(sessionRef.current);
@@ -99,9 +111,19 @@ export default function App() {
           setCurrentDbfs(monData.current_dbfs ?? -60);
           setLogs(logData);
           setHasMore(logData.length === logLimit);
-        } catch {
-          /* silent */
-        }
+
+          // Deteksi log baru dan tampilkan toast
+          logData.forEach((log) => {
+            if (!prevLogIdsRef.current.has(log.id)) {
+              if (log.status === "SUCCESS") {
+                toast.success(`Highlight tersimpan: ${log.filename}`, { duration: 4000 });
+              } else {
+                toast.error(`Gagal simpan highlight: ${log.error_message || "Unknown error"}`, { duration: 4000 });
+              }
+              prevLogIdsRef.current.add(log.id);
+            }
+          });
+        } catch { /* silent */ }
       }, 500);
     } else {
       clearInterval(pollRef.current);
@@ -109,7 +131,7 @@ export default function App() {
     return () => clearInterval(pollRef.current);
   }, [isMonitoring, logLimit]);
 
-  // Poll status OBS terus-menerus (bukan hanya saat monitoring)
+  // Poll status OBS
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -117,8 +139,7 @@ export default function App() {
         const data = await res.json();
         setIsConnected(data.connected);
       } catch { /* silent */ }
-    }, 2000); // cek setiap 2 detik
-
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -133,68 +154,63 @@ export default function App() {
     if (!isMonitoring) {
       await fetch(`${API}/obs/monitor/start`, { method: "POST" });
       setIsMonitoring(true);
+      toast.success("Monitoring dimulai");
     } else {
       await fetch(`${API}/obs/monitor/stop`, { method: "POST" });
       setIsMonitoring(false);
       setCurrentDbfs(-60);
+      toast("Monitoring dihentikan", { icon: "⏹️" });
     }
   }, [isMonitoring]);
 
+  // Dipanggil setelah modal konfirmasi di HighlightsLog dikonfirmasi
   const handleDeleteLog = async (id) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus log ini?")) return;
     try {
       const res = await fetch(`${API}/logs/${id}`, { method: "DELETE" });
       if (res.ok) {
         setLogs((prev) => prev.filter((log) => log.id !== id));
+        prevLogIdsRef.current.delete(id);
+        toast.success("Log berhasil dihapus");
       } else {
-        alert("Gagal menghapus log");
+        toast.error("Gagal menghapus log");
       }
     } catch {
-      alert("Gagal menghubungi server");
+      toast.error("Gagal menghubungi server");
     }
   };
 
+  // Dipanggil setelah modal konfirmasi di HighlightsLog dikonfirmasi
   const handleClearAllLogs = async () => {
-    if (
-      !window.confirm(
-        "Apakah Anda yakin ingin menghapus SEMUA log? Tindakan ini tidak dapat dibatalkan.",
-      )
-    )
-      return;
     try {
       const res = await fetch(`${API}/logs/clear`, { method: "DELETE" });
       if (res.ok) {
         setLogs([]);
         setLogLimit(INITIAL_LIMIT);
         setHasMore(false);
+        prevLogIdsRef.current = new Set();
+        toast.success("Semua log berhasil dihapus");
       } else {
-        alert("Gagal menghapus semua log");
+        toast.error("Gagal menghapus semua log");
       }
     } catch {
-      alert("Gagal menghubungi server");
+      toast.error("Gagal menghubungi server");
     }
   };
 
   return (
     <div className="min-h-screen overflow-y-auto bg-[#0e0f14] text-white font-sans p-4 flex flex-col items-center">
       <div className="w-full max-w-7xl flex flex-col gap-4">
+
         {/* Header */}
         <div className="flex items-center justify-between bg-[#16171f] rounded-xl px-5 py-3 border border-[#2a2b35]">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${isConnected ? "bg-green-400 shadow-[0_0_6px_#4ade80]" : "bg-red-500"}`}
-              />
-              <span className="text-sm font-semibold tracking-wide">
-                OBS Studio
-              </span>
+              <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? "bg-green-400 shadow-[0_0_6px_#4ade80]" : "bg-red-500"}`} />
+              <span className="text-sm font-semibold tracking-wide">OBS Studio</span>
             </div>
             {isMonitoring && (
               <div className="text-sm text-gray-400">
-                Session Time:{" "}
-                <span className="text-yellow-400 font-bold">
-                  {formatTime(sessionTime)}
-                </span>
+                Session Time: <span className="text-yellow-400 font-bold">{formatTime(sessionTime)}</span>
               </div>
             )}
           </div>
@@ -202,12 +218,11 @@ export default function App() {
             onClick={handleStartStop}
             disabled={!isConnected}
             className={`px-6 py-2 rounded-lg font-bold text-sm tracking-widest transition-all
-              ${
-                isConnected
-                  ? isMonitoring
-                    ? "bg-red-600 hover:bg-red-500 text-white"
-                    : "bg-green-500 hover:bg-green-400 text-black"
-                  : "bg-gray-700 text-gray-500 cursor-not-allowed"
+              ${isConnected
+                ? isMonitoring
+                  ? "bg-red-600 hover:bg-red-500 text-white"
+                  : "bg-green-500 hover:bg-green-400 text-black"
+                : "bg-gray-700 text-gray-500 cursor-not-allowed"
               }`}
           >
             {isMonitoring ? "STOP" : "START"}
@@ -217,11 +232,7 @@ export default function App() {
         {/* Main Content */}
         <div className="flex gap-4" style={{ height: "260px" }}>
           <div className="flex-1">
-            <AudioChart
-              currentDbfs={currentDbfs}
-              threshold={threshold}
-              isMonitoring={isMonitoring}
-            />
+            <AudioChart currentDbfs={currentDbfs} threshold={threshold} isMonitoring={isMonitoring} />
           </div>
           <div className="w-72">
             <HighlightsLog
@@ -253,6 +264,7 @@ export default function App() {
             />
           </div>
         </div>
+
       </div>
     </div>
   );
