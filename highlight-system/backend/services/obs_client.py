@@ -1,4 +1,6 @@
-﻿import asyncio
+import logging
+logger = logging.getLogger(__name__)
+import asyncio
 from functools import partial
 import obsws_python as obs
 from config import OBS_HOST, OBS_PORT, OBS_PASSWORD
@@ -42,14 +44,14 @@ class OBSClient:
             self.client = await self._create_client_sync(self.host, self.port, self.password)
             self.connected = True
             self._last_error = ""
-            print(f"✅ Connected to OBS at {self.host}:{self.port}")
+            logger.info(f"✅ Connected to OBS at {self.host}:{self.port}")
             return True, ""
         except Exception as e:
             self.connected = False
             self.client = None
             friendly_msg = _parse_obs_error(e)
             self._last_error = friendly_msg
-            print(f"❌ Failed to connect to OBS: {friendly_msg}")
+            logger.error(f"❌ Failed to connect to OBS: {friendly_msg}")
             return False, friendly_msg
 
     async def ping(self) -> bool:
@@ -100,7 +102,7 @@ class OBSClient:
         try:
             while not self._explicit_disconnect:
                 if not self.connected:
-                    print("🔁 OBS reconnect attempt...")
+                    logger.info("🔁 OBS reconnect attempt...")
                     await self._attempt_connect()
                 await asyncio.sleep(self._reconnect_interval)
         except asyncio.CancelledError:
@@ -118,7 +120,7 @@ class OBSClient:
                 self.client = None
 
             self.connected = False
-            print("🔌 Disconnected from OBS")
+            logger.info("🔌 Disconnected from OBS")
             return {"success": True, "message": "Disconnected from OBS"}
         except Exception as e:
             return {"success": False, "message": str(e)}
@@ -141,7 +143,7 @@ class OBSClient:
             res = await loop.run_in_executor(None, fn)
             return {"success": True, "result": res}
         except Exception as e:
-            print(f"⚠️ OBS client call failed: {e}")
+            logger.warning(f"⚠️ OBS client call failed: {e}")
             self.connected = False
             self.client = None
             if not self._explicit_disconnect:
@@ -152,7 +154,7 @@ class OBSClient:
         res = await self._call_client("save_replay_buffer")
         if not res.get("success"):
             return {"success": False, "message": res.get("message")}
-        print("💾 Replay Buffer saved!")
+        logger.info("💾 Replay Buffer saved!")
         return {"success": True, "message": "Replay Buffer saved"}
 
     async def get_replay_buffer_status(self) -> dict:

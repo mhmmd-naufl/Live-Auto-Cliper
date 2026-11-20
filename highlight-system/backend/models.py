@@ -13,6 +13,8 @@ class Configuration(Base):
     threshold_db: Mapped[float] = mapped_column(Float, default=-20.0)
     file_path: Mapped[str] = mapped_column(Text, default="")
     persistence_duration: Mapped[float] = mapped_column(Float, default=2.0)
+    pre_roll: Mapped[float] = mapped_column(Float, default=5.0)
+    cooldown_seconds: Mapped[float] = mapped_column(Float, default=8.0)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )

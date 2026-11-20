@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 import asyncio
 import math
 import time
@@ -10,7 +12,7 @@ def get_input_devices():
     try:
         devices = sd.query_devices()
     except Exception as e:
-        print(f"❌ Failed to query audio devices: {e}")
+        logger.error(f"❌ Failed to query audio devices: {e}")
         return []
 
     input_devices = []
@@ -28,11 +30,11 @@ def get_input_devices():
 def print_input_devices():
     devs = get_input_devices()
     if not devs:
-        print("No input audio devices found.")
+        logger.info("No input audio devices found.")
         return
-    print("Available input audio devices:")
+    logger.info("Available input audio devices:")
     for d in devs:
-        print(f"  [{d['id']}] {d['name']} - channels: {d['max_input_channels']} - rate: {d['default_samplerate']}")
+        logger.info(f"  [{d['id']}] {d['name']} - channels: {d['max_input_channels']} - rate: {d['default_samplerate']}")
 
 
 class AudioMonitor:
@@ -64,7 +66,7 @@ class AudioMonitor:
 
     def _audio_callback(self, indata, frames, time_info, status):
         if status:
-            print(f"⚠️ Audio status: {status}")
+            logger.warning(f"⚠️ Audio status: {status}")
 
         # Hitung RMS dari frame audio
         rms = np.sqrt(np.mean(indata ** 2))
@@ -82,7 +84,7 @@ class AudioMonitor:
         now = time.time()
         if now - self._last_print_time >= self._print_interval:
             self._last_print_time = now
-            print(f"📊 dBFS: {avg_dbfs:6.1f}")
+            logger.info(f"📊 dBFS: {avg_dbfs:6.1f}")
 
         # Cek threshold (hanya dipanggil SEKALI)
         self._check_threshold(avg_dbfs)
@@ -98,18 +100,18 @@ class AudioMonitor:
             # Audio di atas threshold — catat waktu mulai
             if self.t_start is None:
                 self.t_start = now
-                print(f"🔊 Potensi highlight | dBFS: {dbfs:.1f}")
+                logger.info(f"🔊 Potensi highlight | dBFS: {dbfs:.1f}")
 
             elapsed = now - self.t_start
             if elapsed >= self.persistence_duration:
                 if not self._trigger_valid:
                     self._trigger_valid = True
-                    print(f"✅ Trigger valid! dBFS={dbfs:.1f} | Duration={elapsed:.2f}s | Menunggu audio turun...")
+                    logger.info(f"✅ Trigger valid! dBFS={dbfs:.1f} | Duration={elapsed:.2f}s | Menunggu audio turun...")
         else:
             # Audio turun di bawah threshold
             if self._trigger_valid:
                 # Trigger sudah valid, sekarang audio turun — eksekusi
-                print(f"🔽 Audio turun (T_End) | Eksekusi SaveReplayBuffer...")
+                logger.info(f"🔽 Audio turun (T_End) | Eksekusi SaveReplayBuffer...")
                 if self.on_trigger:
                     from services.trigger_engine import trigger_engine
                     trigger_engine.last_trigger_dbfs = dbfs
@@ -121,7 +123,7 @@ class AudioMonitor:
                 self.t_start = None
             elif self.t_start is not None:
                 # Audio turun sebelum persistence terpenuhi — reset
-                print(f"🔄 Reset (hanya {now - self.t_start:.2f}s)")
+                logger.info(f"🔄 Reset (hanya {now - self.t_start:.2f}s)")
                 self.t_start = None
 
     async def start(self, device_id: int = AUDIO_DEVICE_ID):
@@ -142,11 +144,11 @@ class AudioMonitor:
             )
             self._stream.start()
             self.connected = True
-            print(f"🎙️ Audio Monitor ACTIVE — Device: {device_info['name']}")
-            print(f"Threshold: {self.threshold_db} dBFS | Persistence: {self.persistence_duration}s")
+            logger.info(f"🎙️ Audio Monitor ACTIVE — Device: {device_info['name']}")
+            logger.info(f"Threshold: {self.threshold_db} dBFS | Persistence: {self.persistence_duration}s")
 
         except Exception as e:
-            print(f"❌ Failed to start audio monitor: {e}")
+            logger.error(f"❌ Failed to start audio monitor: {e}")
 
     async def stop(self):
         if self._stream:
@@ -156,7 +158,7 @@ class AudioMonitor:
         self.connected = False
         self._trigger_valid = False
         self.t_start = None
-        print("🛑 Audio monitor stopped")
+        logger.info("🛑 Audio monitor stopped")
 
 
 # Instance global

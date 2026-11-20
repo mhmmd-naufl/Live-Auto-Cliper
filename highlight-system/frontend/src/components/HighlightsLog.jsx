@@ -53,8 +53,18 @@ function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, confirmLabe
 export default function HighlightsLog({ logs, onDelete, onClearAll, onLoadMore, hasMore }) {
   const [deleteTarget, setDeleteTarget] = useState(null); // id log yang mau dihapus
   const [showClearAll, setShowClearAll] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL"); // ALL | SUCCESS | FAILED
+  const [sortDesc, setSortDesc] = useState(true); // true = terbaru dulu
 
-  const visibleLogs = Array.isArray(logs) ? logs : [];
+  const allLogs = Array.isArray(logs) ? logs : [];
+  const filteredLogs = allLogs.filter((l) =>
+    statusFilter === "ALL" ? true : l.status === statusFilter
+  );
+  const visibleLogs = [...filteredLogs].sort((a, b) => {
+    const ta = new Date(a.timestamp).getTime();
+    const tb = new Date(b.timestamp).getTime();
+    return sortDesc ? tb - ta : ta - tb;
+  });
 
   const handleConfirmDelete = () => {
     onDelete(deleteTarget);
@@ -89,16 +99,34 @@ export default function HighlightsLog({ logs, onDelete, onClearAll, onLoadMore, 
       />
 
       <div className="bg-[#16171f] rounded-xl border border-[#2a2b35] p-4 h-full flex flex-col">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
           <h3 className="text-sm font-bold tracking-wider text-white">History</h3>
-          {visibleLogs.length > 0 && (
-            <button
-              onClick={() => setShowClearAll(true)}
-              className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer transition-colors"
+          <div className="flex items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs bg-[#0e0f14] border border-[#2a2b35] rounded px-2 py-1 text-gray-300"
             >
-              Hapus Semua
+              <option value="ALL">Semua</option>
+              <option value="SUCCESS">Sukses</option>
+              <option value="FAILED">Gagal</option>
+            </select>
+            <button
+              onClick={() => setSortDesc((v) => !v)}
+              className="text-xs text-gray-400 hover:text-white px-2 py-1 border border-[#2a2b35] rounded"
+              title="Urutkan"
+            >
+              {sortDesc ? "↓ Terbaru" : "↑ Terlama"}
             </button>
-          )}
+            {allLogs.length > 0 && (
+              <button
+                onClick={() => setShowClearAll(true)}
+                className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer transition-colors"
+              >
+                Hapus Semua
+              </button>
+            )}
+          </div>
         </div>
 
         <div
@@ -134,10 +162,11 @@ export default function HighlightsLog({ logs, onDelete, onClearAll, onLoadMore, 
           )}
         </div>
 
-        {visibleLogs.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-[#2a2b35] text-xs text-gray-600 flex justify-between items-center">
-            <span>Total: {visibleLogs.length} highlight</span>
-            <span>{visibleLogs.filter((l) => l.status === "SUCCESS").length} sukses</span>
+        {allLogs.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-[#2a2b35] text-xs text-gray-600 flex justify-between items-center flex-wrap gap-1">
+            <span>Total: {allLogs.length} highlight</span>
+            <span>{allLogs.filter((l) => l.status === "SUCCESS").length} sukses / {allLogs.filter((l) => l.status !== "SUCCESS").length} gagal</span>
+            <span>Durasi: {allLogs.reduce((s, l) => s + (l.duration || 0), 0).toFixed(1)}s</span>
           </div>
         )}
       </div>

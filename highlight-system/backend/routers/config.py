@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -17,6 +19,8 @@ class ConfigUpdate(BaseModel):
     threshold_db: float = -19.0
     file_path: str = ""
     persistence_duration: float = 2.0
+    pre_roll: float = 5.0
+    cooldown_seconds: float = 8.0
 
 @router.get("")
 async def get_config(db: AsyncSession = Depends(get_db)):
@@ -42,7 +46,13 @@ async def update_config(data: ConfigUpdate, db: AsyncSession = Depends(get_db)):
     
     if data.persistence_duration <= 0:
         raise HTTPException(status_code=400, detail="Persistence duration must be greater than 0")
-    
+
+    if data.pre_roll < 0:
+        raise HTTPException(status_code=400, detail="Pre-roll must be greater than or equal to 0")
+
+    if data.cooldown_seconds <= 0:
+        raise HTTPException(status_code=400, detail="Cooldown must be greater than 0")
+
     if data.file_path and not os.path.exists(data.file_path):
         raise HTTPException(status_code=400, detail=f"Directory does not exist: {data.file_path}")
 
@@ -52,12 +62,20 @@ async def update_config(data: ConfigUpdate, db: AsyncSession = Depends(get_db)):
     config.threshold_db = data.threshold_db
     config.file_path = data.file_path
     config.persistence_duration = data.persistence_duration
+    config.pre_roll = data.pre_roll
+    config.cooldown_seconds = data.cooldown_seconds
     config.updated_at = datetime.now(timezone.utc)
-    
+
     import config as global_config
     global_config.OUTPUT_PATH = data.file_path
+
+    from services import offset_calculator
+    offset_calculator.PRE_ROLL = data.pre_roll
+
+    from services.audio_monitor import audio_monitor
+    audio_monitor.cooldown_seconds = data.cooldown_seconds
     
-    print(f"📁 Path penyimpanan telah diupdate di: {data.file_path}")
+    logger.info(f"📁 Path penyimpanan telah diupdate di: {data.file_path}")
 
     await db.commit()
     await db.refresh(config)

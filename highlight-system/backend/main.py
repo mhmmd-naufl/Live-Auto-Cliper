@@ -1,9 +1,23 @@
-﻿from fastapi import FastAPI
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("highlight.log", encoding="utf-8"),
+    ],
+)
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+import asyncio
+import json
 from contextlib import asynccontextmanager
-from database import init_db
+from database import init_db, AsyncSessionLocal
 from services.obs_client import obs_client
 from services.audio_monitor import audio_monitor
+from services import offset_calculator
+from services.ws_manager import manager
 from services.trigger_engine import trigger_engine
 from routers import config as config_router
 from routers import logs as logs_router
@@ -12,7 +26,36 @@ from routers import logs as logs_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    print("Database tersambung")
+    logger.info("Database tersambung")
+
+    # Sinkronkan konfigurasi runtime (OUTPUT_PATH, threshold, persistence, pre_roll)
+    # dari database agar nilai yang tersimpan tidak hilang saat restart.
+    try:
+        from sqlalchemy import select
+        from models import Configuration
+        import config as global_config
+        from services import offset_calculator
+
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(Configuration).order_by(Configuration.id.desc())
+            )
+            cfg = result.scalar_one_or_none()
+            if cfg:
+                if cfg.file_path:
+                    global_config.OUTPUT_PATH = cfg.file_path
+                if cfg.threshold_db is not None:
+                    audio_monitor.threshold_db = cfg.threshold_db
+                if cfg.persistence_duration:
+                    audio_monitor.persistence_duration = cfg.persistence_duration
+                if cfg.pre_roll is not None:
+                    offset_calculator.PRE_ROLL = cfg.pre_roll
+                if cfg.cooldown_seconds:
+                    audio_monitor.cooldown_seconds = cfg.cooldown_seconds
+                logger.info("✅ Runtime config disinkronkan dari database")
+    except Exception as e:
+        logger.warning(f"⚠️ Gagal sinkron config dari DB: {e}")
+
     yield
 
 
@@ -26,7 +69,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -43,6 +86,27 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# --- WebSocket (real-time push) ---
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            payload = {
+                "connected": obs_client.connected,
+                "current_dbfs": round(audio_monitor.current_dbfs, 2),
+                "threshold_db": audio_monitor.threshold_db,
+                "persistence_duration": audio_monitor.persistence_duration,
+                "pre_roll": getattr(offset_calculator, "PRE_ROLL", 5.0),
+            }
+            await websocket.send_text(json.dumps({"type": "monitor", **payload}))
+            await asyncio.sleep(0.5)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception:
+        manager.disconnect(websocket)
 
 
 # --- OBS ---
@@ -95,7 +159,7 @@ async def monitor_status():
 @app.post("/obs/monitor/threshold")
 async def update_threshold(value: float):
     audio_monitor.threshold_db = value
-    print(f"Threshold diupdate: {value} dBFS")
+    logger.info(f"Threshold diupdate: {value} dBFS")
     return {"success": True, "threshold_db": value}
 
 
@@ -104,7 +168,7 @@ async def update_persistence(value: float):
     if value <= 0:
         return {"success": False, "message": "Persistence harus lebih dari 0"}
     audio_monitor.persistence_duration = value
-    print(f"Persistence diupdate: {value}s")
+    logger.info(f"Persistence diupdate: {value}s")
     return {"success": True, "persistence_duration": value}
 
 @app.post("/obs/monitor/preroll")
@@ -113,14 +177,14 @@ async def update_preroll(value: float):
         return {"success": False, "message": "Pre-roll tidak boleh negatif"}
     from services import offset_calculator
     offset_calculator.PRE_ROLL = value
-    print(f"Pre-roll diupdate: {value}s")
+    logger.info(f"Pre-roll diupdate: {value}s")
     return {"success": True, "pre_roll": value}
     
 @app.post("/obs/monitor/filepath")
 async def update_filepath(value: str):
     import config
     config.OUTPUT_PATH = value
-    print(f"Path penyimpanan diupdate: {value}")
+    logger.info(f"Path penyimpanan diupdate: {value}")
     return {"success": True, "file_path": value}
 
 # --- File Picker ---

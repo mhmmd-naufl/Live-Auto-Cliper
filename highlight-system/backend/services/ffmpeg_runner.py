@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 import subprocess
 import os
 import glob
@@ -17,7 +19,7 @@ def get_latest_replay_file() -> str | None:
         return None
     latest = max(files, key=os.path.getmtime)
     size_mb = os.path.getsize(latest) / 1024 / 1024
-    print(f"📁 Latest replay file: {latest} (size: {size_mb:.1f} MB)")
+    logger.info(f"📁 Latest replay file: {latest} (size: {size_mb:.1f} MB)")
     return latest
 
 
@@ -35,14 +37,14 @@ def get_video_duration(video_path: str) -> float | None:
             data = json.loads(result.stdout)
             return float(data.get("format", {}).get("duration", 0))
     except Exception as e:
-        print(f"⚠️ ffprobe error: {e}")
+        logger.warning(f"⚠️ ffprobe error: {e}")
     return None
 
 # TAMBAHKAN parameter dynamic_output_path di sini
 def run_ffmpeg_cut(t_start: float, t_save: float, dynamic_output_path: str) -> dict:
     try:
         # Tunggu OBS selesai menulis file
-        print("⏳ Menunggu Replay Buffer selesai ditulis...")
+        logger.info("⏳ Menunggu Replay Buffer selesai ditulis...")
         time.sleep(3.5)
 
         input_file = get_latest_replay_file()
@@ -52,17 +54,17 @@ def run_ffmpeg_cut(t_start: float, t_save: float, dynamic_output_path: str) -> d
         # Cek durasi aktual file buffer
         actual_buffer_duration = get_video_duration(input_file)
         if not actual_buffer_duration:
-            print("⚠️ Tidak bisa cek durasi file, pakai REPLAY_BUFFER_DURATION dari config")
+            logger.warning("⚠️ Tidak bisa cek durasi file, pakai REPLAY_BUFFER_DURATION dari config")
             actual_buffer_duration = REPLAY_BUFFER_DURATION
 
-        print(f"📏 Durasi aktual file buffer: {actual_buffer_duration:.2f}s")
+        logger.info(f"📏 Durasi aktual file buffer: {actual_buffer_duration:.2f}s")
 
         # Hitung titik potong berdasarkan durasi aktual (bukan asumsi dari .env)
         cut_info = calculate_cut_point(t_start, t_save, actual_buffer_duration)
         cut_start = cut_info["cut_start"]
         offset = cut_info["offset"]
 
-        print(f"📐 Posisi momen (offset): {offset}s | Titik potong: {cut_start}s "
+        logger.info(f"📐 Posisi momen (offset): {offset}s | Titik potong: {cut_start}s "
               f"| T_Start={t_start:.2f} | T_Save={t_save:.2f}")
 
         # Siapkan output file menggunakan dynamic_output_path
@@ -84,7 +86,7 @@ def run_ffmpeg_cut(t_start: float, t_save: float, dynamic_output_path: str) -> d
             output_file
         ]
 
-        print(f"🎬 Running FFmpeg: {' '.join(cmd)}")
+        logger.info(f"🎬 Running FFmpeg: {' '.join(cmd)}")
 
         result = subprocess.run(
             cmd,
@@ -94,7 +96,7 @@ def run_ffmpeg_cut(t_start: float, t_save: float, dynamic_output_path: str) -> d
         )
 
         if result.returncode != 0:
-            print(f"❌ FFmpeg Error:\n{result.stderr[-500:]}")
+            logger.error(f"❌ FFmpeg Error:\n{result.stderr[-500:]}")
             return {
                 "success": False,
                 "filename": output_filename,
@@ -103,7 +105,7 @@ def run_ffmpeg_cut(t_start: float, t_save: float, dynamic_output_path: str) -> d
 
         # Cek durasi hasil
         actual_duration = get_video_duration(output_file)
-        print(f"✅ Highlight saved: {output_filename} "
+        logger.info(f"✅ Highlight saved: {output_filename} "
               f"| Durasi: {actual_duration:.2f}s "
               f"| Momen ada di detik ~{cut_info['pre_roll']}s dari awal klip")
 
@@ -117,5 +119,5 @@ def run_ffmpeg_cut(t_start: float, t_save: float, dynamic_output_path: str) -> d
         }
 
     except Exception as e:
-        print(f"❌ Exception in FFmpeg: {e}")
+        logger.error(f"❌ Exception in FFmpeg: {e}")
         return {"success": False, "error_message": str(e)}

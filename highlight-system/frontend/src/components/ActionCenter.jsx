@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 
-const API = "http://127.0.0.1:8000";
+const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 export default function ActionCenter({
   threshold,
@@ -53,6 +53,10 @@ export default function ActionCenter({
             setActiveThreshold(configData.threshold_db);
             setLocalThreshold(configData.threshold_db.toString());
             setThreshold(configData.threshold_db);
+          }
+          if (typeof configData.pre_roll === "number") {
+            setActivePreRoll(configData.pre_roll);
+            setLocalPreRoll(configData.pre_roll.toString());
           }
         }
       } catch (err) {

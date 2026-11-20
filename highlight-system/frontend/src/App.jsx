@@ -5,7 +5,7 @@ import AudioChart from "./components/AudioChart.jsx";
 import ActionCenter from "./components/ActionCenter.jsx";
 import HighlightsLog from "./components/HighlightsLog.jsx";
 
-const API = "http://127.0.0.1:8000";
+const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const INITIAL_LIMIT = 5;
 const PAGE_SIZE = 5;
 
@@ -25,7 +25,7 @@ export default function App() {
   });
 
   const sessionRef = useRef(null);
-  const pollRef = useRef(null);
+  const wsRef = useRef(null);
   const prevLogIdsRef = useRef(new Set());
 
   useEffect(() => {
@@ -98,38 +98,52 @@ export default function App() {
     };
   }, [isMonitoring]);
 
+  // WebSocket real-time: terima update dBFS & log baru dari backend
   useEffect(() => {
-    if (isMonitoring) {
-      pollRef.current = setInterval(async () => {
-        try {
-          const [monRes, logRes] = await Promise.all([
-            fetch(`${API}/obs/monitor/status`),
-            fetch(`${API}/logs?limit=${logLimit}`),
-          ]);
-          const monData = await monRes.json();
-          const logData = await logRes.json();
-          setCurrentDbfs(monData.current_dbfs ?? -60);
-          setLogs(logData);
-          setHasMore(logData.length === logLimit);
+    let reconnectTimer = null;
+    const wsUrl = API.replace(/^http/, "ws") + "/ws";
 
-          // Deteksi log baru dan tampilkan toast
-          logData.forEach((log) => {
-            if (!prevLogIdsRef.current.has(log.id)) {
-              if (log.status === "SUCCESS") {
-                toast.success(`Highlight tersimpan: ${log.filename}`, { duration: 4000 });
-              } else {
-                toast.error(`Gagal simpan highlight: ${log.error_message || "Unknown error"}`, { duration: 4000 });
+    const connect = () => {
+      try {
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === "monitor") {
+              if (typeof msg.current_dbfs === "number") setCurrentDbfs(msg.current_dbfs);
+            } else if (msg.type === "log") {
+              const log = msg.log;
+              setLogs((prev) => {
+                if (prev.some((l) => l.id === log.id)) return prev;
+                return [log, ...prev].slice(0, logLimit);
+              });
+              if (!prevLogIdsRef.current.has(log.id)) {
+                if (log.status === "SUCCESS") {
+                  toast.success(`Highlight tersimpan: ${log.filename}`, { duration: 4000 });
+                } else {
+                  toast.error(`Gagal simpan highlight: ${log.error_message || "Unknown error"}`, { duration: 4000 });
+                }
+                prevLogIdsRef.current.add(log.id);
               }
-              prevLogIdsRef.current.add(log.id);
             }
-          });
-        } catch { /* silent */ }
-      }, 500);
-    } else {
-      clearInterval(pollRef.current);
-    }
-    return () => clearInterval(pollRef.current);
-  }, [isMonitoring, logLimit]);
+          } catch { /* silent */ }
+        };
+        ws.onclose = () => {
+          reconnectTimer = setTimeout(connect, 2000);
+        };
+        ws.onerror = () => {
+          try { ws.close(); } catch { /* silent */ }
+        };
+      } catch { /* silent */ }
+    };
+
+    connect();
+    return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      try { wsRef.current?.close(); } catch { /* silent */ }
+    };
+  }, [logLimit]);
 
   // Poll status OBS
   useEffect(() => {
